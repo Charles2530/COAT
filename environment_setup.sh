@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+# conda activate /mnt/lm_data_afs/wangzining/charles/miniconda3/envs/coat
 CONDA_ENV=${1:-""}
 if [ -n "$CONDA_ENV" ]; then
     # This is required to activate conda environment

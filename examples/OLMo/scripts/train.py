@@ -109,7 +109,6 @@ def main(cfg: TrainConfig) -> None:
         wandb.init(
             dir=wandb_dir,
             project=cfg.wandb.project,
-            entity=cfg.wandb.entity,
             group=cfg.wandb.group,
             name=cfg.wandb.name,
             tags=cfg.wandb.tags,

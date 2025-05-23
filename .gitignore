@@ -17,6 +17,8 @@ hostfile
 *_dev.sh
 *.ipynb
 
+examples/ToolBench/datasets                                                                    │
+examples/ToolBench/toolllama	
 
 # Python
 __pycache__

@@ -1,7 +1,7 @@
 export PYTHONPATH=./
 export CUDA_VISIBLE_DEVICES=4,5,6,7
-export MODEL_NAME="meta-llama/Llama-2-7b-hf"
-export CONVERTED_MODEL_PATH="converted_models/llama-2-7b"
+export MODEL_NAME="/mnt/lm_data_afs/wangzining/charles/models/llama3-8b"
+export CONVERTED_MODEL_PATH="converted_models/llama3-8b"
 
 # We double the batch size here
 torchrun --nproc_per_node=4 --master_port=20001 toolbench/train/train_fp8.py \

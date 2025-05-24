@@ -272,8 +272,10 @@ def train():
         padding_side="right",
         use_fast=False,
     )
-    tokenizer.pad_token = tokenizer.unk_token
 
+    # tokenizer.pad_token = tokenizer.unk_token
+    tokenizer.pad_token = tokenizer.eos_token
+    # tokenizer.pad_token="<|reserved_special_token_9|>; tokenizer.padding_side="left""
     data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
     world_size = int(os.environ.get("WORLD_SIZE", 1))
     ddp = world_size != 1

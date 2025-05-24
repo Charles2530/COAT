@@ -791,8 +791,7 @@ class Trainer:
                 if get_global_rank() == 0:
                     from coat.activation.utils import record_memory_allocated
                     memory_usage = torch.cuda.memory_allocated() / 1024 ** 2
-                    record_memory_allocated["Before OLMo Step Forward"].append(memory_usage)
-                    
+                    record_memory_allocated["Before OLMo Step Forward"].append(memory_usage)  
             # setup sync context for DDP for all micro-batches except the last
             grad_sync_context = nullcontext
             if (

@@ -234,7 +234,7 @@ def fp8matmul(a, b, output_quantize, scale_a, scale_b, QB, bias=None, stochastic
         BLOCK_N=256,
         BLOCK_K=128,
         GROUP_M=8,
-        num_stages=3,
+        num_stages=2,
         num_warps=8,
     )
     # Reshape output to batch

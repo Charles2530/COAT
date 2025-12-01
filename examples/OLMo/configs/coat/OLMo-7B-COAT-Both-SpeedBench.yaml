@@ -1,5 +1,5 @@
 # Differentce: Batch Size = 4, Global Batch Size = 256. We can double the batch size with COAT.
-run_name: OLMo-7B-COAT-Both
+run_name: OLMo-7B-COAT-Both-SpeedBench
 seed: 6198
 dry_run: false
 

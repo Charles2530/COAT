@@ -1,5 +1,5 @@
 # Differentce: Batch Size = 2, Global Batch Size = 32
-run_name: OLMo-7B-COAT-Both
+run_name: OLMo-7B-COAT-Both-MemBench
 seed: 6198
 dry_run: false
 

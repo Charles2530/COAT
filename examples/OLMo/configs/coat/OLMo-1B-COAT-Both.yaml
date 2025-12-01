@@ -4,7 +4,7 @@ dry_run: false
 
 wandb:
   name: ${run_name}
-  project: olmo-small
+  project: CoatOLMo-1B
 
 model:
   d_model: 2048

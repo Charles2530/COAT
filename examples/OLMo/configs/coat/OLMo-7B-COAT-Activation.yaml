@@ -4,7 +4,7 @@ dry_run: false
 
 wandb:
   name: ${run_name}
-  project: olmo-medium
+  project: CoatOLMo-7B
 
 model:
   d_model: 4096

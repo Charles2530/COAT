@@ -4,7 +4,7 @@ dry_run: false
 
 wandb:
   name: ${run_name}
-  project: CoatOLMo-1B
+  project: CoatOLMo-7B
   entity: null
 
 model:

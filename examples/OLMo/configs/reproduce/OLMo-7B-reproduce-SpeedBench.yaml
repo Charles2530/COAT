@@ -1,11 +1,11 @@
 # Differentce: Batch Size = 2, Global Batch Size = 256
-run_name: OLMo-7B-reproduce
+run_name: OLMo-7B-reproduce-SpeedBench  
 seed: 6198
 dry_run: false
 
 wandb:
   name: ${run_name}
-  project: CoatOLMo-1B
+  project: CoatOLMo-7B
   entity: null
 
 model:

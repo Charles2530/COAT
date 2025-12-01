@@ -7,3 +7,6 @@
 [submodule "third_party/DeepGEMM"]
 	path = third_party/DeepGEMM
 	url = https://github.com/deepseek-ai/DeepGEMM.git
+[submodule "quant"]
+	path = quant
+	url = git@github.com:Charles2530/fake_quant_ops.git

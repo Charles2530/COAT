@@ -28,5 +28,9 @@ TORCH_CUDA_ARCH_LIST="8.9 9.0" python setup.py install
 cd third_party/DeepGEMM
 python setup.py install
 
+
+cd examples/OLMo/
+pip install -e .[all]
+cd ../..
 # python -m build
 # twine upload dist/*

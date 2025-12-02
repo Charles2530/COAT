@@ -59,7 +59,7 @@ tokenizer:
   truncate_direction: right
 
 # save_folder: result/checkpoints/${run_name}
-# save_overwrite: true
+save_overwrite: true
 # # Sharded checkpoints (best for restarts)
 # save_interval: 1000
 # save_num_checkpoints_to_keep: 9

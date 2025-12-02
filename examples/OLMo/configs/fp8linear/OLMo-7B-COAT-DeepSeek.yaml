@@ -158,8 +158,8 @@ evaluators:
   # - label: piqa
   #   type: downstream
 
-  # - label: hellaswag
-  #   type: downstream
+  - label: hellaswag
+    type: downstream
 
   # - label: winogrande
   #   type: downstream
@@ -167,20 +167,20 @@ evaluators:
   # - label: openbook_qa
   #   type: downstream
 
-  # # - label: boolq  # requires implemention of the pmi_dc matrix
-  #   # type: downstream
-
-  # - label: sciq
+  # - label: boolq  # requires implemention of the pmi_dc matrix
   #   type: downstream
 
-  # - label: arc_easy
-  #   type: downstream
+  - label: sciq
+    type: downstream
+
+  - label: arc_easy
+    type: downstream
 
   # # - label: arc_challenge  # requires implemention of the pmi_dc matrix
   # #   type: downstream
 
-  # - label: copa
-  #   type: downstream
+  - label: copa
+    type: downstream
 
   # - label: rte
   #   type: downstream

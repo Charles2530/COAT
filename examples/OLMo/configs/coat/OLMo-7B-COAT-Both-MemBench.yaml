@@ -78,16 +78,16 @@ tokenizer:
   identifier: allenai/eleuther-ai-gpt-neox-20b-pii-special
   truncate_direction: right
 
-save_folder: result/checkpoints/${run_name}
-save_overwrite: true
-# Sharded checkpoints (best for restarts)
-save_interval: 1000
-save_num_checkpoints_to_keep: 9
-# Unsharded checkpoints (for final storage)
-save_interval_unsharded: 10000
-save_num_unsharded_checkpoints_to_keep: -1
+# save_folder: result/checkpoints/${run_name}
+# save_overwrite: true
+# # Sharded checkpoints (best for restarts)
+# save_interval: 1000
+# save_num_checkpoints_to_keep: 9
+# # Unsharded checkpoints (for final storage)
+# save_interval_unsharded: 10000
+# save_num_unsharded_checkpoints_to_keep: -1
 
-load_path: ${path.check_exist:result/checkpoints/${run_name}/latest}
+# load_path: ${path.check_exist:result/checkpoints/${run_name}/latest}
 
 max_duration: 2e12T  # 2T tokens
 global_train_batch_size: 32
@@ -106,7 +106,7 @@ max_grad_norm_ratio: null
 speed_monitor:
   window_size: 20
 
-eval_interval: ${save_interval}
+eval_interval: 1000
 eval_subset_num_batches: -1
 device_eval_batch_size: ${device_train_microbatch_size}
 evaluators:

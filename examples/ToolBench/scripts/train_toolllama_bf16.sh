@@ -2,7 +2,7 @@ export PYTHONPATH=./
 export CUDA_VISIBLE_DEVICES=4,5,6,7
 
 torchrun --nproc_per_node=4 --master_port=20001 toolbench/train/train.py \
-    --model_name_or_path meta-llama/Llama-2-7b-hf  \
+    --model_name_or_path /mtc_afs/charles/llama-2-7b  \
     --data_path  data/toolllama_G123_dfs_train.json \
     --eval_data_path  data/toolllama_G123_dfs_eval.json \
     --conv_template tool-llama-single-round \

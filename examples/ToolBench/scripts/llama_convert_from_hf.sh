@@ -1,4 +1,4 @@
-export MODEL_NAME="/mnt/lm_data_afs/wangzining/charles/models/llama3-8b"
+export MODEL_NAME="meta-llama/Llama-2-7b"
 export CONVERTED_MODEL_PATH="converted_models/llama3-8b"
 export CURRENT_DIR=$(pwd)
 export FULL_CONVERTED_MODEL_PATH="${CURRENT_DIR}/${CONVERTED_MODEL_PATH}"

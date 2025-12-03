@@ -1,4 +1,4 @@
-export MODEL_NAME="/mtc_afs/charles/Llama-2-7b"
+export MODEL_NAME="/mtc_afs/charles/llama-2-7b"
 export CONVERTED_MODEL_PATH="converted_models/llama-2-7b"
 export CURRENT_DIR=$(pwd)
 export FULL_CONVERTED_MODEL_PATH="${CURRENT_DIR}/${CONVERTED_MODEL_PATH}"

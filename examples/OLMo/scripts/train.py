@@ -23,6 +23,10 @@ from olmo.config import (
     DistributedStrategy,
     TrainConfig,
 )
+# Add project root to sys.path to import fake_quant_ops
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 from olmo.data import build_train_dataloader
 from olmo.eval import build_evaluators
 from olmo.exceptions import OLMoCliError, OLMoConfigurationError

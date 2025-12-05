@@ -935,6 +935,16 @@ class QuantActivationConfig(BaseConfig):
     The quantization group size of non-linear layers.
     """
 
+    quant_qkv: Optional[bool] = False
+    """
+    Whether to apply fake quantization to QKV tensors before FlashAttention.
+    """
+
+    qkvbit: Optional[str] = None
+    """
+    Quantization format for QKV fake quantization. Options: "mxfp8e4m3", "mxfp8e5m2", etc.
+    """
+
     # ========================== Fake Quantization Related Arguments ==========================
     row_blocksize: Optional[int] = 32
     """

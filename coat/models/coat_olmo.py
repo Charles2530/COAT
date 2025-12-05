@@ -1035,8 +1035,6 @@ class CoatOLMoSequentialBlock(CoatOLMoBlock):
             k =k.to(torch.bfloat16)
             v =v.to(torch.bfloat16)
 
-
-
         # Get attention scores.
         att, cache = self.attention(
             q,

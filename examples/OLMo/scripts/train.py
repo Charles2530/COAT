@@ -52,6 +52,7 @@ from olmo.util import (
 )
 
 from coat.models.coat_olmo import CoatOLMo
+from coat.models.coat_olmo_fake import CoatOLMoFake
 
 log = logging.getLogger("train")
 
@@ -139,6 +140,12 @@ def main(cfg: TrainConfig) -> None:
         olmo_model = CoatOLMo(cfg.model, cfg.quantize_model)
         for name, module in olmo_model.named_modules():
             module.layer_name = name
+    elif cfg.quantize_model.use_quantize_model == "coat_fake":
+        log.info("Using CoatOLMoFake with fake quantization (fake_quant_ops)")
+        olmo_model = CoatOLMoFake(cfg.model, cfg.quantize_model)
+        for name, module in olmo_model.named_modules():
+            if hasattr(module, 'layer_name'):
+                module.layer_name = name
     elif cfg.quantize_model.use_quantize_model == "fp8deepseek":
         os.environ["COAT_FP8Linear"] = "DeepSeek"
         olmo_model = OLMo(cfg.model)

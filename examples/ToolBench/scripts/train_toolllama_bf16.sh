@@ -11,7 +11,7 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train.py \
     --num_train_epochs 1 \
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 2 \
-    --gradient_accumulation_steps 8 \
+    --gradient_accumulation_steps 32 \
     --evaluation_strategy "epoch" \
     --prediction_loss_only \
     --save_strategy "epoch" \
@@ -25,6 +25,6 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train.py \
     --fsdp_transformer_layer_cls_to_wrap 'LlamaDecoderLayer' \
     --tf32 True \
     --source_model_max_length 4096 \
-    --model_max_length 4096 \
+    --model_max_length 1024 \
     --lazy_preprocess True \
     --report_to wandb

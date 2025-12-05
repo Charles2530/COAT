@@ -1023,7 +1023,15 @@ class CoatOLMoSequentialBlock(CoatOLMoBlock):
         if self.config.clip_qkv is not None:
             qkv.clamp_(min=-self.config.clip_qkv, max=self.config.clip_qkv)
 
+        
         q, k, v = qkv.split(self.fused_dims, dim=-1)
+
+        # mxfp fake quant qkv
+        if getattr(self.qargs, 'quant_qkv', False):
+            from fake_quant_ops.quant.mxfp import quant_dequant_qkv
+            elem_format = "fp8_e4m3" if self.qargs.qkvbit == "mxfp8e4m3" else "fp8_e5m2"
+            q,k,v = quant_dequant_qkv(q,k,v,elem_format)
+
 
         # Get attention scores.
         att, cache = self.attention(

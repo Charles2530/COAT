@@ -1031,6 +1031,10 @@ class CoatOLMoSequentialBlock(CoatOLMoBlock):
             from fake_quant_ops.quant.mxfp import quant_dequant_qkv
             elem_format = "fp8_e4m3" if self.qargs.qkvbit == "mxfp8e4m3" else "fp8_e5m2"
             q,k,v = quant_dequant_qkv(q,k,v,elem_format)
+            q =q.to(torch.bfloat16)
+            k =k.to(torch.bfloat16)
+            v =v.to(torch.bfloat16)
+
 
 
         # Get attention scores.

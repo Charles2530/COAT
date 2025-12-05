@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # --------------- 2. 系统必备 ---------------
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        git wget build-essential ca-certificates && \
+    git wget build-essential ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 # --------------- 3. 安装 Miniconda ---------------
@@ -26,7 +26,7 @@ ENV COAT_ENV=coat
 # 创建环境，使用 conda-forge 频道（更可靠）
 RUN /opt/conda/bin/conda create -n $COAT_ENV python=3.10.14 -y -c conda-forge || \
     (echo "Conda create with conda-forge failed, trying defaults..." && \
-     /opt/conda/bin/conda create -n $COAT_ENV python=3.10.14 -y -c defaults)
+    /opt/conda/bin/conda create -n $COAT_ENV python=3.10.14 -y -c defaults)
 # 让后续 RUN 指令自动激活环境
 SHELL ["conda", "run", "-n", "coat", "/bin/bash", "-c"]
 

@@ -1027,17 +1027,10 @@ class CoatOLMoSequentialBlock(CoatOLMoBlock):
         q, k, v = qkv.split(self.fused_dims, dim=-1)
 
         # mxfp fake quant qkv
-        if self.qargs.quant_qkv:
+        if getattr(self.qargs, 'quant_qkv', False):
             from fake_quant_ops.quant.mxfp import quant_dequant_qkv
-            # Map qkvbit format to elem_format
-            if self.qargs.qkvbit == "mxfp8e4m3":
-                elem_format = "fp8_e4m3"
-            elif self.qargs.qkvbit == "mxfp8e5m2":
-                elem_format = "fp8_e5m2"
-            else:
-                # Default to E4M3 if not specified or unknown format
-                elem_format = "fp8_e4m3" if self.qargs.fabit == "E4M3" else "fp8_e5m2"
-            q, k, v = quant_dequant_qkv(q, k, v, elem_format)
+            elem_format = "fp8_e4m3" if self.qargs.qkvbit == "mxfp8e4m3" else "fp8_e5m2"
+            q,k,v = quant_dequant_qkv(q,k,v,elem_format)
 
 
         # Get attention scores.

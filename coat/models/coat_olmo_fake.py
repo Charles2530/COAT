@@ -117,26 +117,52 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
             k = k.to(torch.bfloat16)
             v = v.to(torch.bfloat16)
         
-        # Get attention scores
-        if self._activation_checkpoint_fn is not None:
-            att, cache = self._activation_checkpoint_fn(
-                self.attention,
-                q, k, v,
-                attention_bias,
-                layer_past=layer_past,
-                use_cache=use_cache,
-                max_doc_len=max_doc_len,
-                cu_doc_lens=cu_doc_lens,
+        # Compute attention scores manually to allow quantization before attn_out
+        # Note: We cannot use self.attention() directly as it already applies attn_out
+        B, T, C = q.size()
+        dtype = k.dtype
+
+        # Optionally apply layer norm to keys and queries.
+        if self.q_norm is not None and self.k_norm is not None:
+            q = self.q_norm(q).to(dtype=dtype)
+            k = self.k_norm(k).to(dtype=dtype)
+
+        # Move head forward to be next to the batch dim.
+        q = q.view(B, T, self.config.n_heads, C // self.config.n_heads).transpose(1, 2)
+        k = k.view(B, T, self.config.effective_n_kv_heads, C // self.config.n_heads).transpose(1, 2)
+        v = v.view(B, T, self.config.effective_n_kv_heads, C // self.config.n_heads).transpose(1, 2)
+
+        if layer_past is not None:
+            past_key, past_value = layer_past
+            k = torch.cat((past_key, k), dim=-2)
+            v = torch.cat((past_value, v), dim=-2)
+
+        present = (k, v) if use_cache else None
+        query_len, key_len = q.shape[-2], k.shape[-2]
+
+        if self.config.rope:
+            q, k = self.rotary_emb(q, k)
+
+        if attention_bias is not None:
+            attention_bias = self._cast_attn_bias(
+                attention_bias[:, :, key_len - query_len : key_len, :key_len], dtype
             )
-        else:
-            att, cache = self.attention(
-                q, k, v,
-                attention_bias=attention_bias,
-                layer_past=layer_past,
-                use_cache=use_cache,
-                max_doc_len=max_doc_len,
-                cu_doc_lens=cu_doc_lens,
-            )
+
+        # Get the attention scores
+        att = self._scaled_dot_product_attention(
+            q,
+            k,
+            v,
+            attn_mask=attention_bias,
+            dropout_p=0.0 if not self.training else self.config.attention_dropout,
+            is_causal=attention_bias is None,
+            max_doc_len=max_doc_len,
+            cu_doc_lens=cu_doc_lens,
+        )
+
+        # Re-assemble all head outputs side-by-side
+        att = att.transpose(1, 2).contiguous().view(B, T, C)
+        cache = present
         
         if self.config.norm_after:
             if self._activation_checkpoint_fn is not None:

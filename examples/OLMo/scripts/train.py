@@ -145,7 +145,7 @@ def main(cfg: TrainConfig) -> None:
         olmo_model = CoatOLMoFake(cfg.model, cfg.quantize_model)
         for name, module in olmo_model.named_modules():
             if hasattr(module, 'layer_name'):
-            module.layer_name = name
+                module.layer_name = name
     elif cfg.quantize_model.use_quantize_model == "fp8deepseek":
         os.environ["COAT_FP8Linear"] = "DeepSeek"
         olmo_model = OLMo(cfg.model)

@@ -17,6 +17,8 @@
 """
 CoatOLMoFake: OLMo model with fake quantization using fake_quant_ops.
 This module provides simulated quantization for research and evaluation purposes.
+The basic idea is to add quantization operators at the input of all layers (including attn and linear)
+and convert back to torch.bfloat16.
 """
 
 from __future__ import annotations
@@ -27,7 +29,6 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 # Add project root to sys.path to import fake_quant_ops
 import os
@@ -42,54 +43,11 @@ from olmo.exceptions import OLMoConfigurationError
 log = logging.getLogger(__name__)
 
 
-class FakeQuantizedLinear(nn.Module):
-    """
-    A Linear layer wrapper with fake quantization.
-    Uses fake_quant_ops for simulated quantization.
-    """
-    
-    def __init__(
-        self, 
-        linear: nn.Linear, 
-        quant_format: str = 'fp8_e5m2',
-        quantize_input: bool = True,
-        quantize_weight: bool = True,
-        quantize_output: bool = True
-    ):
-        super().__init__()
-        self.linear = linear
-        self.quant_format = quant_format
-        self.quantize_input = quantize_input
-        self.quantize_weight = quantize_weight
-        self.quantize_output = quantize_output
-        
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # Quantize input
-        if self.quantize_input:
-            from fake_quant_ops.quant.mxfp import quant_dequant_tensor
-            x = quant_dequant_tensor(x, self.quant_format)
-        
-        # Quantize weight
-        if self.quantize_weight:
-            from fake_quant_ops.quant.mxfp import quant_dequant_tensor
-            weight = quant_dequant_tensor(self.linear.weight, self.quant_format)
-            # Use quantized weight for computation
-            output = F.linear(x, weight, self.linear.bias)
-        else:
-            output = self.linear(x)
-        
-        # Quantize output
-        if self.quantize_output:
-            from fake_quant_ops.quant.mxfp import quant_dequant_tensor
-            output = quant_dequant_tensor(output, self.quant_format)
-        
-        return output
-
-
 class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
     """
     OLMo Sequential Block with fake quantization.
-    Applies fake quantization to QKV, attention output, and MLP layers.
+    Applies fake quantization to all linear layer inputs (att_proj, attn_out, ff_proj, ff_out).
+    The basic idea is to add quantization operators at the input of all layers and convert back to torch.bfloat16.
     """
     
     def __init__(self, layer_id: int, config: ModelConfig, qargs: QuantActivationConfig, cache: BufferCache):
@@ -106,27 +64,6 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
                 self.quant_format = 'fp8_e5m2'  # default
         else:
             self.quant_format = 'fp8_e5m2'  # default
-        
-        # Wrap linear layers with fake quantization
-        # Replace att_proj
-        original_att_proj = self.att_proj
-        self.att_proj = FakeQuantizedLinear(
-            original_att_proj,
-            quant_format=self.quant_format,
-            quantize_input=True,
-            quantize_weight=True,
-            quantize_output=True
-        )
-        
-        # Replace ff_proj
-        original_ff_proj = self.ff_proj
-        self.ff_proj = FakeQuantizedLinear(
-            original_ff_proj,
-            quant_format=self.quant_format,
-            quantize_input=True,
-            quantize_weight=True,
-            quantize_output=True
-        )
     
     def forward(
         self,
@@ -138,8 +75,17 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
         cu_doc_lens: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, tuple[torch.Tensor, torch.Tensor] | None]:
         """
-        Forward pass with fake quantization on QKV tensors.
+        Forward pass with fake quantization on all linear layer inputs.
+        Quantization is applied at the input of:
+        1. att_proj (after norm)
+        2. attn_out (after attention)
+        3. ff_proj (after norm)
+        4. ff_out (after activation)
+        All quantized tensors are converted back to torch.bfloat16.
         """
+        from fake_quant_ops.quant.mxfp import quant_dequant_tensor, quant_dequant_qkv
+        
+        # ========== Attention path ==========
         # Apply norm before attention
         if not self.config.norm_after:
             if self._activation_checkpoint_fn is not None:
@@ -149,8 +95,12 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
         else:
             h = x
         
-        # Get QKV projections (already wrapped with fake quantization)
-        qkv = self.att_proj(h)
+        # Quantize input to att_proj and convert back to bfloat16
+        h_quant = quant_dequant_tensor(h, self.quant_format)
+        h_quant = h_quant.to(torch.bfloat16)
+        
+        # Get QKV projections
+        qkv = self.att_proj(h_quant)
         
         if self.config.clip_qkv is not None:
             qkv.clamp_(min=-self.config.clip_qkv, max=self.config.clip_qkv)
@@ -158,10 +108,11 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
         q, k, v = qkv.split(self.fused_dims, dim=-1)
         
         # Apply additional fake quantization to QKV if enabled
+        # Note: quant_dequant_qkv already converts to bfloat16 internally
         if getattr(self.qargs, 'quant_qkv', False):
-            from fake_quant_ops.quant.mxfp import quant_dequant_qkv
             qkv_format = "fp8_e4m3" if getattr(self.qargs, 'qkvbit', None) == "mxfp8e4m3" else "fp8_e5m2"
             q, k, v = quant_dequant_qkv(q, k, v, qkv_format)
+            # Ensure bfloat16 dtype (quant_dequant_qkv already does this, but keep for consistency with coat_olmo.py)
             q = q.to(torch.bfloat16)
             k = k.to(torch.bfloat16)
             v = v.to(torch.bfloat16)
@@ -193,10 +144,17 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
             else:
                 att = self.attn_norm(att)
         
-        # Add attention scores
-        x = x + self.dropout(att)
+        # Quantize input to attn_out and convert back to bfloat16
+        att_quant = quant_dequant_tensor(att, self.quant_format)
+        att_quant = att_quant.to(torch.bfloat16)
         
-        # MLP (already wrapped with fake quantization)
+        # Attention output projection
+        att_out = self.attn_out(att_quant)
+        
+        # Add attention scores
+        x = x + self.dropout(att_out)
+        
+        # ========== MLP path ==========
         og_x = x
         
         if not self.config.norm_after:
@@ -205,14 +163,25 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
             else:
                 x = self.ff_norm(x)
         
-        x = self.ff_proj(x)
+        # Quantize input to ff_proj and convert back to bfloat16
+        x_quant = quant_dequant_tensor(x, self.quant_format)
+        x_quant = x_quant.to(torch.bfloat16)
         
+        # Feed-forward projection
+        x = self.ff_proj(x_quant)
+        
+        # Activation function
         if self._activation_checkpoint_fn is not None:
             x = self._activation_checkpoint_fn(self.act, x)
         else:
             x = self.act(x)
         
-        x = self.ff_out(x)
+        # Quantize input to ff_out and convert back to bfloat16
+        x_quant = quant_dequant_tensor(x, self.quant_format)
+        x_quant = x_quant.to(torch.bfloat16)
+        
+        # Output projection
+        x = self.ff_out(x_quant)
         
         if self.config.norm_after:
             if self._activation_checkpoint_fn is not None:
@@ -230,9 +199,12 @@ class CoatOLMoFake(OLMo):
     OLMo model with fake quantization using fake_quant_ops.
     
     This class wraps the standard OLMo model and applies fake quantization
-    to activations and weights for research and evaluation purposes.
+    to activations for research and evaluation purposes.
     Unlike real quantization, fake quantization does not accelerate training
     but allows studying quantization effects.
+    
+    The basic idea is to add quantization operators at the input of all layers
+    (including attn and linear) and convert back to torch.bfloat16.
     """
     
     def __init__(self, config: ModelConfig, qargs: QuantActivationConfig, init_params: bool = True):
@@ -258,7 +230,7 @@ class CoatOLMoFake(OLMo):
                     blocks.append(block)
             self.transformer.blocks = nn.ModuleList(blocks)
         elif hasattr(self.transformer, 'block_groups'):
-            # Handle block groups
+            # Handle block groups - replace blocks within each group
             for block_group in self.transformer.block_groups:
                 for i, block in enumerate(block_group):
                     if isinstance(block, OLMoSequentialBlock):
@@ -272,4 +244,3 @@ class CoatOLMoFake(OLMo):
         log.info(f"Quantization format: {getattr(qargs, 'fabit', 'fp8_e5m2')}")
         if getattr(qargs, 'quant_qkv', False):
             log.info(f"QKV fake quantization enabled: {getattr(qargs, 'qkvbit', 'fp8_e5m2')}")
-

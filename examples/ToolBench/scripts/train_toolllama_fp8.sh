@@ -1,7 +1,7 @@
 export PYTHONPATH=./
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-export MODEL_NAME="/mtc_afs/charles/llama-2-7b"
-export CONVERTED_MODEL_PATH="converted_models/llama-2-7b"
+export MODEL_NAME="/mnt/lm_data_afs/wangzining/charles/models/Llama-2-7b-hf"
+export CONVERTED_MODEL_PATH="converted_models/llama2-7b-hf"
 
 # We double the batch size here
 torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train_fp8.py \
@@ -48,4 +48,3 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train_fp8.py \
     # --second_order_bit E4M3 \
     # --qgroup_size 128 \
     # --expand_min 16
-

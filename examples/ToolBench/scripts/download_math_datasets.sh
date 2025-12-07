@@ -134,11 +134,12 @@ echo "--- Downloading NumGLUE ---"
 NUMGLUE_DIR="${DATA_DIR}/numglue"
 mkdir -p ${NUMGLUE_DIR}
 
-# Try HuggingFace first
-
-cd ${NUMGLUE_DIR}
-wget https://github.com/allenai/numglue/blob/main/data/NumGLUE_test.json
-mv NumGLUE_test.json test.json
+# Use raw GitHub URL for direct file download
+NUMGLUE_URL="https://raw.githubusercontent.com/allenai/numglue/main/data/NumGLUE_test.json"
+download_file "${NUMGLUE_URL}" "${NUMGLUE_DIR}/test.json" "NumGLUE dataset" || {
+    echo "  ✗ NumGLUE download failed. Please download manually from:"
+    echo "    https://github.com/allenai/numglue"
+}
 echo ""
 
 # 4. Download MATH (Mathematica/Math Competition Problems)
@@ -155,7 +156,7 @@ import os
 os.makedirs("${MATH_DIR}", exist_ok=True)
 try:
     # Download MATH dataset from qwedsacf/competition_math
-    dataset = load_dataset("qwedsacf/competition_math", split="test")
+    dataset = load_dataset("qwedsacf/competition_math", split="train")
     dataset.to_json("${MATH_DIR}/test.json")
     print(f"  ✓ Downloaded MATH to ${MATH_DIR}/test.json")
 except Exception as e:

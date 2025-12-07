@@ -2,6 +2,7 @@ export PYTHONPATH=./
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export MODEL_NAME="/mnt/lm_data_afs/wangzining/charles/models/Llama-2-7b-hf"
 export SAVE_DIR="toolllama/bf16"
+export WANDB_RUN_NAME="${WANDB_RUN_NAME:-toolllama-bf16-$(date +%Y%m%d-%H%M%S)}"
 
 torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train.py \
     --model_name_or_path $MODEL_NAME  \
@@ -29,6 +30,7 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train.py \
     --source_model_max_length 4096 \
     --model_max_length 1024 \
     --lazy_preprocess True \
+    --run_name $WANDB_RUN_NAME \
     --report_to wandb
 
 # Run inference on the math reasoning datasets

@@ -3,6 +3,7 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export MODEL_NAME="/mnt/lm_data_afs/wangzining/charles/models/Llama-2-7b-hf"
 export CONVERTED_MODEL_PATH="converted_models/llama2-7b-hf"
 export SAVE_DIR="toolllama/fp8"
+export WANDB_RUN_NAME="${WANDB_RUN_NAME:-toolllama-fp8-$(date +%Y%m%d-%H%M%S)}"
 
 # We double the batch size here
 torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train_fp8.py \
@@ -13,7 +14,7 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train_fp8.py \
     --conv_template tool-llama-single-round \
     --bf16 True \
     --output_dir $SAVE_DIR \
-    --num_train_epochs 1 \
+    --num_train_epochs 3\
     --per_device_train_batch_size 2 \
     --per_device_eval_batch_size 2 \
     --gradient_accumulation_steps 4 \
@@ -32,6 +33,7 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train_fp8.py \
     --source_model_max_length 4096 \
     --model_max_length 4096 \
     --lazy_preprocess True \
+    --run_name $WANDB_RUN_NAME \
     --report_to wandb
 
     # Below are the default value for FP8 training

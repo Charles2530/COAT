@@ -53,36 +53,11 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
     def __init__(self, layer_id: int, config: ModelConfig, qargs: QuantActivationConfig, cache: BufferCache):
         super().__init__(layer_id, config, cache)
         self.qargs = qargs
-        
-        # Determine forward quantization format
-        if hasattr(qargs, 'fabit') and qargs.fabit:
-            if qargs.fabit == 'E4M3':
-                self.quant_format = 'mxfp8_e4m3'
-            elif qargs.fabit == 'E5M2':
-                self.quant_format = 'mxfp8_e5m2'
-            else:
-                self.quant_format = 'mxfp8_e5m2'  # default
-        else:
-            self.quant_format = 'mxfp8_e5m2'  # default
-        
-        # Determine backward quantization format
-        if hasattr(qargs, 'babit') and qargs.babit:
-            if qargs.babit == 'E5M2':
-                self.backward_quant_format = 'mxfp8_e5m2'
-            elif qargs.babit == 'E4M3':
-                self.backward_quant_format = 'mxfp8_e4m3'
-            else:
-                self.backward_quant_format = 'mxfp8_e5m2'  # default
-        else:
-            self.backward_quant_format = 'mxfp8_e5m2'  # default
-        
-        # Determine whether to enable backward quantization
-        # Enable backward quantization if babit is set (not "100" which means no quantization)
-        self.backward_quantize = (
-            hasattr(qargs, 'babit') 
-            and qargs.babit 
-            and qargs.babit != "100"
-        )
+        self.backward_quantize = qargs.backward_quantize
+        self.forward_quant_format = qargs.fabit
+        self.attn_quantize_format = qargs.attn_quantize_forward_bit
+        self.attn_quantize_backward_format = qargs.attn_quantize_backward_bit   
+        self.backward_quant_format = qargs.babit
     
     def forward(
         self,
@@ -117,7 +92,7 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
         # Quantize input to att_proj and convert back to bfloat16
         h_quant = quant_dequant_tensor_with_backward(
             h, 
-            forward_format=self.quant_format,
+            forward_format=self.forward_quant_format,
             backward_quantize=self.backward_quantize,
             backward_format=self.backward_quant_format
         )
@@ -210,7 +185,7 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
         # Quantize input to attn_out and convert back to bfloat16
         att_quant = quant_dequant_tensor_with_backward(
             att,
-            forward_format=self.quant_format,
+            forward_format=self.forward_quant_format,
             backward_quantize=self.backward_quantize,
             backward_format=self.backward_quant_format
         )
@@ -234,7 +209,7 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
         # Quantize input to ff_proj and convert back to bfloat16
         x_quant = quant_dequant_tensor_with_backward(
             x,
-            forward_format=self.quant_format,
+            forward_format=self.forward_quant_format,
             backward_quantize=self.backward_quantize,
             backward_format=self.backward_quant_format
         )
@@ -252,7 +227,7 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
         # Quantize input to ff_out and convert back to bfloat16
         x_quant = quant_dequant_tensor_with_backward(
             x,
-            forward_format=self.quant_format,
+            forward_format=self.forward_quant_format,
             backward_quantize=self.backward_quantize,
             backward_format=self.backward_quant_format
         )

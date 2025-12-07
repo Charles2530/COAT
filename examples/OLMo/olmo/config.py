@@ -925,6 +925,12 @@ class QuantActivationConfig(BaseConfig):
     Bit width of backward linear layer output
     """
 
+    backward_quantize: Optional[bool] = False
+    """
+    Whether to enable backward quantization (gradient quantization).
+    When enabled, gradients will be quantized during backward pass.
+    """
+
     weight_memory_efficient: Optional[bool] = False
     """
     Whether to save weight_fp8 and weight_fp8_t in the first microbatch. Useful when gradient accumulation is applied

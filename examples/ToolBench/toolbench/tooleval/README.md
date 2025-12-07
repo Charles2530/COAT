@@ -134,7 +134,37 @@ To evaluate with a new method besides ReACT and DFSDT, you should prepare your c
 ### Update the Leaderboard
 
 To update the [ToolEval Leaderboard](https://openbmb.github.io/ToolBench/), you should submit your converted answer file (`${CONVERTED_ANSWER_PATH}/${MODEL_NAME}`) to us (urtoolbench@gmail.com) in above format or open a pull request.
-We will run the evaluation script to get the result and update the leaderboard.     
+We will run the evaluation script to get the result and update the leaderboard.
+
+## Math Reasoning Evaluation
+
+We also support evaluation on math reasoning datasets: **SVAMP**, **GSM8K**, **NumGLUE**, and **Mathematica**.
+
+### Usage
+
+Evaluate a single math reasoning dataset:
+
+```bash
+python eval_math_reasoning.py \
+    --predictions_path path/to/predictions.json \
+    --dataset svamp \
+    --dataset_path path/to/svamp_test.json \
+    --output_path results/svamp \
+    --extract_answer_from_response
+```
+
+Or use the batch evaluation script for all datasets:
+
+```bash
+# Set environment variables (see example_math_eval_config.sh)
+export SVAMP_PREDICTIONS="path/to/predictions.json"
+export SVAMP_DATASET="path/to/dataset.json"
+# ... set other datasets
+
+bash ../../scripts/eval_math_reasoning.sh
+```
+
+For detailed documentation, see [MATH_REASONING_README.md](MATH_REASONING_README.md).     
 
 
 ### Create new Automatic Evaluators

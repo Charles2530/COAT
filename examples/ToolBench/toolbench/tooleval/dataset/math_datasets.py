@@ -6,20 +6,42 @@ from typing import List, Dict, Any
 
 
 def load_svamp(dataset_path: str) -> List[Dict[str, Any]]:
-    """Load SVAMP dataset from JSON file."""
-    with open(dataset_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
+    """Load SVAMP dataset from JSON or JSONL file."""
+    data = []
     
-    # Handle both list and dict formats
-    if isinstance(data, dict):
-        # If it's a dict with 'problems' key
-        if 'problems' in data:
-            data = data['problems']
-        # If it's a dict mapping IDs to problems
-        elif all(isinstance(k, str) for k in data.keys()):
-            data = [{'id': k, **v} for k, v in data.items()]
+    with open(dataset_path, 'r', encoding='utf-8') as f:
+        if dataset_path.endswith('.jsonl'):
+            # JSONL format - each line is a JSON object
+            for line in f:
+                if line.strip():
+                    data.append(json.loads(line))
         else:
-            data = list(data.values())
+            # JSON format
+            try:
+                data = json.load(f)
+                # Handle both list and dict formats
+                if isinstance(data, dict):
+                    # If it's a dict with 'problems' key
+                    if 'problems' in data:
+                        data = data['problems']
+                    # If it's a dict mapping IDs to problems
+                    elif all(isinstance(k, str) for k in data.keys()):
+                        data = [{'id': k, **v} for k, v in data.items()]
+                    else:
+                        data = list(data.values())
+            except json.JSONDecodeError as e:
+                # If single JSON load fails, try reading as JSONL
+                f.seek(0)
+                for line in f:
+                    if line.strip():
+                        try:
+                            data.append(json.loads(line))
+                        except json.JSONDecodeError:
+                            continue
+    
+    # Ensure we return a list
+    if not isinstance(data, list):
+        data = [data] if data else []
     
     return data
 
@@ -47,35 +69,79 @@ def load_gsm8k(dataset_path: str) -> List[Dict[str, Any]]:
 
 
 def load_numglue(dataset_path: str) -> List[Dict[str, Any]]:
-    """Load NumGLUE dataset from JSON file."""
-    with open(dataset_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
+    """Load NumGLUE dataset from JSON or JSONL file."""
+    data = []
     
-    # Handle different formats
-    if isinstance(data, dict):
-        if 'test' in data:
-            data = data['test']
-        elif 'data' in data:
-            data = data['data']
-        elif 'instances' in data:
-            data = data['instances']
+    with open(dataset_path, 'r', encoding='utf-8') as f:
+        if dataset_path.endswith('.jsonl'):
+            # JSONL format - each line is a JSON object
+            for line in f:
+                if line.strip():
+                    data.append(json.loads(line))
+        else:
+            # JSON format
+            try:
+                data = json.load(f)
+                # Handle different formats
+                if isinstance(data, dict):
+                    if 'test' in data:
+                        data = data['test']
+                    elif 'data' in data:
+                        data = data['data']
+                    elif 'instances' in data:
+                        data = data['instances']
+            except json.JSONDecodeError as e:
+                # If single JSON load fails, try reading as JSONL
+                f.seek(0)
+                for line in f:
+                    if line.strip():
+                        try:
+                            data.append(json.loads(line))
+                        except json.JSONDecodeError:
+                            continue
+    
+    # Ensure we return a list
+    if not isinstance(data, list):
+        data = [data] if data else []
     
     return data
 
 
 def load_mathematica(dataset_path: str) -> List[Dict[str, Any]]:
-    """Load Mathematica dataset from JSON file."""
-    with open(dataset_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
+    """Load Mathematica dataset from JSON or JSONL file."""
+    data = []
     
-    # Handle different formats
-    if isinstance(data, dict):
-        if 'test' in data:
-            data = data['test']
-        elif 'data' in data:
-            data = data['data']
-        elif 'problems' in data:
-            data = data['problems']
+    with open(dataset_path, 'r', encoding='utf-8') as f:
+        if dataset_path.endswith('.jsonl'):
+            # JSONL format - each line is a JSON object
+            for line in f:
+                if line.strip():
+                    data.append(json.loads(line))
+        else:
+            # JSON format
+            try:
+                data = json.load(f)
+                # Handle different formats
+                if isinstance(data, dict):
+                    if 'test' in data:
+                        data = data['test']
+                    elif 'data' in data:
+                        data = data['data']
+                    elif 'problems' in data:
+                        data = data['problems']
+            except json.JSONDecodeError as e:
+                # If single JSON load fails, try reading as JSONL
+                f.seek(0)
+                for line in f:
+                    if line.strip():
+                        try:
+                            data.append(json.loads(line))
+                        except json.JSONDecodeError:
+                            continue
+    
+    # Ensure we return a list
+    if not isinstance(data, list):
+        data = [data] if data else []
     
     return data
 

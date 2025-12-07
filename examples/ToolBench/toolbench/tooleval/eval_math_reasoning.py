@@ -5,10 +5,17 @@ import argparse
 import json
 import os
 import re
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from tqdm import tqdm
 import numpy as np
 import sys
+
+# Optional wandb import
+try:
+    import wandb
+    WANDB_AVAILABLE = True
+except ImportError:
+    WANDB_AVAILABLE = False
 
 # Add dataset module to path
 sys.path.append(os.path.join(os.path.dirname(__file__), '.'))
@@ -38,7 +45,80 @@ def parse_args():
                         help='Output directory for results')
     parser.add_argument('--extract_answer_from_response', action='store_true',
                         help='Extract numerical answer from model response text')
+    parser.add_argument('--log_to_wandb', action='store_true',
+                        help='Log evaluation results to wandb')
     return parser.parse_args()
+
+
+def evaluate_dataset(
+    predictions_path: str,
+    dataset: str,
+    dataset_path: str,
+    output_path: str = 'math_reasoning_results',
+    log_to_wandb: bool = False
+) -> Tuple[float, List[Dict]]:
+    """Evaluate a math reasoning dataset and optionally log to wandb."""
+    # Load predictions
+    print(f"Loading predictions from {predictions_path}")
+    with open(predictions_path, 'r') as f:
+        predictions = json.load(f)
+    
+    # Evaluate based on dataset
+    dataset_lower = dataset.lower()
+    if dataset_lower == 'svamp':
+        accuracy, results = evaluate_svamp(predictions, dataset_path)
+    elif dataset_lower == 'gsm8k':
+        accuracy, results = evaluate_gsm8k(predictions, dataset_path)
+    elif dataset_lower == 'numglue':
+        accuracy, results = evaluate_numglue(predictions, dataset_path)
+    elif dataset_lower == 'mathematica':
+        accuracy, results = evaluate_mathematica(predictions, dataset_path)
+    else:
+        raise ValueError(f"Unknown dataset: {dataset}")
+    
+    # Create output directory
+    os.makedirs(output_path, exist_ok=True)
+    
+    # Save detailed results
+    output_file = os.path.join(output_path, f"{dataset}_results.json")
+    with open(output_file, 'w') as f:
+        json.dump({
+            'dataset': dataset,
+            'accuracy': accuracy,
+            'total': len(results),
+            'correct': sum(1 for r in results if r['correct']),
+            'results': results
+        }, f, indent=2, ensure_ascii=False)
+    
+    # Save summary
+    summary_file = os.path.join(output_path, f"{dataset}_summary.txt")
+    with open(summary_file, 'w') as f:
+        f.write(f"Dataset: {dataset}\n")
+        f.write(f"Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)\n")
+        f.write(f"Correct: {sum(1 for r in results if r['correct'])}\n")
+        f.write(f"Total: {len(results)}\n")
+    
+    # Log to wandb if requested
+    if log_to_wandb and WANDB_AVAILABLE:
+        try:
+            if wandb.run is not None:
+                wandb.log({
+                    f"eval/{dataset}/accuracy": accuracy,
+                    f"eval/{dataset}/correct": sum(1 for r in results if r['correct']),
+                    f"eval/{dataset}/total": len(results)
+                })
+                print(f"Logged {dataset} evaluation results to wandb")
+        except Exception as e:
+            print(f"Warning: Failed to log to wandb: {e}")
+    
+    print(f"\n{'='*50}")
+    print(f"Dataset: {dataset}")
+    print(f"Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)")
+    print(f"Correct: {sum(1 for r in results if r['correct'])} / {len(results)}")
+    print(f"Results saved to: {output_file}")
+    print(f"{'='*50}")
+    
+    return accuracy, results
 
 
 def extract_number(text: str) -> str:
@@ -293,53 +373,14 @@ def evaluate_mathematica(predictions: Dict, dataset_path: str) -> Tuple[float, L
 
 def main():
     args = parse_args()
-    
-    # Load predictions
-    print(f"Loading predictions from {args.predictions_path}")
-    with open(args.predictions_path, 'r') as f:
-        predictions = json.load(f)
-    
-    # Evaluate based on dataset
-    dataset_lower = args.dataset.lower()
-    if dataset_lower == 'svamp':
-        accuracy, results = evaluate_svamp(predictions, args.dataset_path)
-    elif dataset_lower == 'gsm8k':
-        accuracy, results = evaluate_gsm8k(predictions, args.dataset_path)
-    elif dataset_lower == 'numglue':
-        accuracy, results = evaluate_numglue(predictions, args.dataset_path)
-    elif dataset_lower == 'mathematica':
-        accuracy, results = evaluate_mathematica(predictions, args.dataset_path)
-    else:
-        raise ValueError(f"Unknown dataset: {args.dataset}")
-    
-    # Create output directory
-    os.makedirs(args.output_path, exist_ok=True)
-    
-    # Save detailed results
-    output_file = os.path.join(args.output_path, f"{args.dataset}_results.json")
-    with open(output_file, 'w') as f:
-        json.dump({
-            'dataset': args.dataset,
-            'accuracy': accuracy,
-            'total': len(results),
-            'correct': sum(1 for r in results if r['correct']),
-            'results': results
-        }, f, indent=2, ensure_ascii=False)
-    
-    # Save summary
-    summary_file = os.path.join(args.output_path, f"{args.dataset}_summary.txt")
-    with open(summary_file, 'w') as f:
-        f.write(f"Dataset: {args.dataset}\n")
-        f.write(f"Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)\n")
-        f.write(f"Correct: {sum(1 for r in results if r['correct'])}\n")
-        f.write(f"Total: {len(results)}\n")
-    
-    print(f"\n{'='*50}")
-    print(f"Dataset: {args.dataset}")
-    print(f"Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)")
-    print(f"Correct: {sum(1 for r in results if r['correct'])} / {len(results)}")
-    print(f"Results saved to: {output_file}")
-    print(f"{'='*50}")
+    # Note: extract_answer_from_response is always used in evaluate_* functions
+    evaluate_dataset(
+        predictions_path=args.predictions_path,
+        dataset=args.dataset,
+        dataset_path=args.dataset_path,
+        output_path=args.output_path,
+        log_to_wandb=args.log_to_wandb
+    )
 
 
 if __name__ == "__main__":

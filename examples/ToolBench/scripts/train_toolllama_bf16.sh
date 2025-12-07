@@ -14,7 +14,7 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train.py \
     --num_train_epochs 3 \
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 2 \
-    --gradient_accumulation_steps 32 \
+    --gradient_accumulation_steps 8 \
     --evaluation_strategy "epoch" \
     --prediction_loss_only \
     --save_strategy "epoch" \
@@ -32,15 +32,14 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train.py \
     --lazy_preprocess True \
     --run_name $WANDB_RUN_NAME \
     --report_to wandb
+# # Run inference on the math reasoning datasets
+# bash scripts/inference_all_math_datasets.sh \
+#     --model_path toolllama/bf16/ \
+#     --skip_existing
 
-# Run inference on the math reasoning datasets
-bash scripts/inference_all_math_datasets.sh \
-    --model_path toolllama/bf16/ \
-    --skip_existing
-
-# Evaluate the model on the math reasoning datasets
-export SVAMP_PREDICTIONS="/mnt/lm_data_afs/wangzining/charles/COAT/examples/ToolBench/predictions/math_reasoning/svamp_predictions.json"
-export GSM8K_PREDICTIONS="/mnt/lm_data_afs/wangzining/charles/COAT/examples/ToolBench/predictions/math_reasoning/gsm8k_predictions.json"
-export NUMGLUE_PREDICTIONS="/mnt/lm_data_afs/wangzining/charles/COAT/examples/ToolBench/predictions/math_reasoning/numglue_predictions.json"
-export MATHEMATICA_PREDICTIONS="/mnt/lm_data_afs/wangzining/charles/COAT/examples/ToolBench/predictions/math_reasoning/mathematica_predictions.json"
-bash scripts/eval_math_reasoning.sh
+# # Evaluate the model on the math reasoning datasets
+# export SVAMP_PREDICTIONS="/mnt/lm_data_afs/wangzining/charles/COAT/examples/ToolBench/predictions/math_reasoning/svamp_predictions.json"
+# export GSM8K_PREDICTIONS="/mnt/lm_data_afs/wangzining/charles/COAT/examples/ToolBench/predictions/math_reasoning/gsm8k_predictions.json"
+# export NUMGLUE_PREDICTIONS="/mnt/lm_data_afs/wangzining/charles/COAT/examples/ToolBench/predictions/math_reasoning/numglue_predictions.json"
+# export MATHEMATICA_PREDICTIONS="/mnt/lm_data_afs/wangzining/charles/COAT/examples/ToolBench/predictions/math_reasoning/mathematica_predictions.json"
+# bash scripts/eval_math_reasoning.sh

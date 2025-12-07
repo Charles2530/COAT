@@ -2,6 +2,7 @@ export PYTHONPATH=./
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export MODEL_NAME="/mnt/lm_data_afs/wangzining/charles/models/Llama-2-7b-hf"
 export CONVERTED_MODEL_PATH="converted_models/llama2-7b-hf"
+export SAVE_DIR="toolllama/fp8"
 
 # We double the batch size here
 torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train_fp8.py \
@@ -11,7 +12,7 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train_fp8.py \
     --eval_data_path  data/toolllama_G123_dfs_eval.json \
     --conv_template tool-llama-single-round \
     --bf16 True \
-    --output_dir toolllama \
+    --output_dir $SAVE_DIR \
     --num_train_epochs 1 \
     --per_device_train_batch_size 2 \
     --per_device_eval_batch_size 2 \
@@ -48,3 +49,15 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train_fp8.py \
     # --second_order_bit E4M3 \
     # --qgroup_size 128 \
     # --expand_min 16
+
+# Run inference on the math reasoning datasets
+bash scripts/inference_all_math_datasets.sh \
+    --model_path toolllama/fp8/ \
+    --skip_existing
+
+# Evaluate the model on the math reasoning datasets
+export SVAMP_PREDICTIONS="/mnt/lm_data_afs/wangzining/charles/COAT/examples/ToolBench/predictions/math_reasoning/svamp_predictions.json"
+export GSM8K_PREDICTIONS="/mnt/lm_data_afs/wangzining/charles/COAT/examples/ToolBench/predictions/math_reasoning/gsm8k_predictions.json"
+export NUMGLUE_PREDICTIONS="/mnt/lm_data_afs/wangzining/charles/COAT/examples/ToolBench/predictions/math_reasoning/numglue_predictions.json"
+export MATHEMATICA_PREDICTIONS="/mnt/lm_data_afs/wangzining/charles/COAT/examples/ToolBench/predictions/math_reasoning/mathematica_predictions.json"
+bash scripts/eval_math_reasoning.sh

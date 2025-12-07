@@ -38,6 +38,7 @@ download_hf_dataset() {
     local dataset_name=$1
     local output_dir=$2
     local split=$3
+    local config_name=${4:-""}  # Optional config name
     
     echo "Downloading ${dataset_name} from HuggingFace..."
     python3 << EOF
@@ -45,7 +46,10 @@ import os
 from datasets import load_dataset
 
 os.makedirs("${output_dir}", exist_ok=True)
-dataset = load_dataset("${dataset_name}", split="${split}")
+if "${config_name}":
+    dataset = load_dataset("${dataset_name}", "${config_name}", split="${split}")
+else:
+    dataset = load_dataset("${dataset_name}", split="${split}")
 output_file = os.path.join("${output_dir}", "${split}.json")
 dataset.to_json(output_file)
 print(f"  ✓ Downloaded to {output_file}")
@@ -109,8 +113,19 @@ except Exception as e:
 EOF
 else
     echo "  Installing datasets library..."
-    pip install datasets --quiet
-    download_hf_dataset "gsm8k" "${GSM8K_DIR}" "test"
+    pip install datasets --quiet || echo "  Failed to install datasets. Please install manually: pip install datasets"
+    # Try downloading with explicit config
+    python3 << EOF
+from datasets import load_dataset
+import os
+os.makedirs("${GSM8K_DIR}", exist_ok=True)
+try:
+    test_dataset = load_dataset("gsm8k", "main", split="test")
+    test_dataset.to_json("${GSM8K_DIR}/test.jsonl")
+    print(f"  ✓ Downloaded GSM8K test to ${GSM8K_DIR}/test.jsonl")
+except Exception as e:
+    print(f"  ✗ Failed: {e}")
+EOF
 fi
 echo ""
 

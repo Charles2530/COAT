@@ -111,14 +111,9 @@ def main(cfg: TrainConfig) -> None:
     if cfg.wandb is not None and (get_global_rank() == 0 or not cfg.wandb.rank_zero_only):
         wandb_dir = Path(cfg.save_folder) / "wandb"
         wandb_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Set wandb run name: use cfg.wandb.name if provided, otherwise use run_name with timestamp
-        wandb_name = cfg.wandb.name
-        if wandb_name is None:
-            # Use run_name with timestamp if wandb.name is not set
-            timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-            wandb_name = f"{cfg.run_name}-{timestamp}"
-        
+        # Add timestamp to wandb name
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        wandb_name = f"{cfg.wandb.name}_{timestamp}" if cfg.wandb.name else timestamp
         wandb.init(
             dir=wandb_dir,
             project=cfg.wandb.project,

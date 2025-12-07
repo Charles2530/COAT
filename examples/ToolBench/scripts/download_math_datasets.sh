@@ -135,27 +135,10 @@ NUMGLUE_DIR="${DATA_DIR}/numglue"
 mkdir -p ${NUMGLUE_DIR}
 
 # Try HuggingFace first
-if python3 -c "from datasets import load_dataset" 2>/dev/null; then
-    python3 << EOF
-from datasets import load_dataset
-import json
-import os
 
-os.makedirs("${NUMGLUE_DIR}", exist_ok=True)
-try:
-    # NumGLUE might be available on HuggingFace
-    dataset = load_dataset("allenai/numglue", split="test")
-    dataset.to_json("${NUMGLUE_DIR}/test.json")
-    print(f"  ✓ Downloaded NumGLUE to ${NUMGLUE_DIR}/test.json")
-except:
-    # If not on HF, try GitHub
-    print("  NumGLUE not found on HuggingFace. Trying GitHub...")
-    print("  Please download manually from: https://github.com/allenai/numglue")
-EOF
-else
-    echo "  Please download NumGLUE manually from: https://github.com/allenai/numglue"
-    echo "  Or install datasets library: pip install datasets"
-fi
+cd ${NUMGLUE_DIR}
+wget https://github.com/allenai/numglue/blob/main/data/NumGLUE_test.json
+mv NumGLUE_test.json test.json
 echo ""
 
 # 4. Download MATH (Mathematica/Math Competition Problems)
@@ -171,25 +154,19 @@ import os
 
 os.makedirs("${MATH_DIR}", exist_ok=True)
 try:
-    # Try MATH dataset from Hendrycks
-    dataset = load_dataset("hendrycks/competition_math", split="test")
+    # Download MATH dataset from qwedsacf/competition_math
+    dataset = load_dataset("qwedsacf/competition_math", split="test")
     dataset.to_json("${MATH_DIR}/test.json")
     print(f"  ✓ Downloaded MATH to ${MATH_DIR}/test.json")
-except:
-    try:
-        # Alternative: Try lighteval/math
-        dataset = load_dataset("lighteval/math", split="test")
-        dataset.to_json("${MATH_DIR}/test.json")
-        print(f"  ✓ Downloaded MATH to ${MATH_DIR}/test.json")
-    except:
-        print("  ✗ MATH dataset download failed")
-        print("  Please download manually from:")
-        print("    - https://github.com/hendrycks/math")
-        print("    - https://huggingface.co/datasets/hendrycks/competition_math")
+except Exception as e:
+    print(f"  ✗ MATH download failed: {e}")
+    print("  Please download manually from:")
+    print("    - https://huggingface.co/datasets/qwedsacf/competition_math")
+    print("    - https://github.com/hendrycks/math")
 EOF
 else
     echo "  Please install datasets library: pip install datasets"
-    echo "  Then download MATH from: https://huggingface.co/datasets/hendrycks/competition_math"
+    echo "  Then download MATH from: https://huggingface.co/datasets/qwedsacf/competition_math"
 fi
 echo ""
 

@@ -28,7 +28,7 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train.py \
     --fsdp_transformer_layer_cls_to_wrap 'LlamaDecoderLayer' \
     --tf32 True \
     --source_model_max_length 4096 \
-    --model_max_length 1024 \
+    --model_max_length 4096 \
     --lazy_preprocess True \
     --run_name $WANDB_RUN_NAME \
     --report_to wandb

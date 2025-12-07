@@ -52,14 +52,9 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train_fp8.py \
     # --qgroup_size 128 \
     # --expand_min 16
 
-# Run inference on the math reasoning datasets
-bash scripts/inference_all_math_datasets.sh \
-    --model_path toolllama/fp8/ \
-    --skip_existing
-
-# Evaluate the model on the math reasoning datasets
-export SVAMP_PREDICTIONS="/mnt/lm_data_afs/wangzining/charles/COAT/examples/ToolBench/predictions/math_reasoning/svamp_predictions.json"
-export GSM8K_PREDICTIONS="/mnt/lm_data_afs/wangzining/charles/COAT/examples/ToolBench/predictions/math_reasoning/gsm8k_predictions.json"
-export NUMGLUE_PREDICTIONS="/mnt/lm_data_afs/wangzining/charles/COAT/examples/ToolBench/predictions/math_reasoning/numglue_predictions.json"
-export MATHEMATICA_PREDICTIONS="/mnt/lm_data_afs/wangzining/charles/COAT/examples/ToolBench/predictions/math_reasoning/mathematica_predictions.json"
-bash scripts/eval_math_reasoning.sh
+# Training will automatically run inference and evaluation on math reasoning datasets after training completes
+# Results will be logged to the same wandb run
+# Optional: Configure paths for math reasoning pipeline test
+# export DATA_BASE_DIR="/mnt/lm_data_afs/wangzining/charles/COAT/examples/ToolBench/data/math_datasets"
+# export PREDICTIONS_BASE_DIR="/mnt/lm_data_afs/wangzining/charles/COAT/examples/ToolBench/predictions/math_reasoning"
+# export SKIP_EXISTING="true"

@@ -298,8 +298,7 @@ def train():
     else:
         trainer.train()
 
-    trainer.save_state()
-    safe_save_model_for_hf_trainer(trainer=trainer, output_dir=training_args.output_dir)
+    
     
     # Run inference and evaluation on math reasoning datasets (only on rank 0)
     if local_rank == 0 and INFERENCE_AVAILABLE:
@@ -357,7 +356,8 @@ def train():
                         self.batch_size = 1
                 
                 inference_args = InferenceArgs()
-                inference_model = load_inference_model(inference_args)
+                # inference_model = load_inference_model(inference_args)
+                inference_model = trainer.model
                 run_inference(
                     model=inference_model,
                     dataset_name=dataset_name,
@@ -432,6 +432,8 @@ def train():
         rank0_print("\n" + "="*50)
         rank0_print("Math Reasoning Pipeline Test Completed")
         rank0_print("="*50 + "\n")
+    trainer.save_state()
+    safe_save_model_for_hf_trainer(trainer=trainer, output_dir=training_args.output_dir)
 
 
 if __name__ == "__main__":

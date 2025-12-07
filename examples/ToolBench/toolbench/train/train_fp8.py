@@ -34,6 +34,16 @@ from coat.models.coat_llama import CoatLlamaForCausalLM, make_state_dict_compati
 from coat.utils._fp8_quantization_config import QuantizationConfig
 from coat.fp8_trainer import CoatFP8Trainer
 
+# Import inference and evaluation functions (will be checked later when needed)
+INFERENCE_AVAILABLE = False
+try:
+    from toolbench.inference.inference_math_reasoning import run_inference, load_model as load_inference_model
+    from toolbench.tooleval.eval_math_reasoning import evaluate_dataset
+    INFERENCE_AVAILABLE = True
+except ImportError:
+    # Will print warning later when actually used
+    pass
+
 IGNORE_TOKEN_ID = LabelSmoother.ignore_index
 torch.set_printoptions(profile="full")
 
@@ -302,6 +312,139 @@ def train():
         trainer.train(resume_from_checkpoint=True)
     else:
         trainer.train()
+    
+    # Run inference and evaluation on math reasoning datasets (only on rank 0)
+    if local_rank == 0 and INFERENCE_AVAILABLE:
+        # Check if wandb is being used
+        use_wandb = training_args.report_to and "wandb" in training_args.report_to
+        
+        # Get paths from environment variables or use defaults
+        data_base_dir = os.environ.get("DATA_BASE_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "math_datasets"))
+        predictions_base_dir = os.environ.get("PREDICTIONS_BASE_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "predictions", "math_reasoning"))
+        os.makedirs(predictions_base_dir, exist_ok=True)
+        
+        # Dataset paths
+        dataset_paths = {
+            "svamp": os.path.join(data_base_dir, "svamp", "test.json"),
+            "gsm8k": os.path.join(data_base_dir, "gsm8k", "test.jsonl"),
+            "numglue": os.path.join(data_base_dir, "numglue", "test.json"),
+            "mathematica": os.path.join(data_base_dir, "mathematica", "test.json"),
+        }
+        
+        rank0_print("\n" + "="*50)
+        rank0_print("Starting Math Reasoning Pipeline Test")
+        rank0_print("="*50)
+        
+        # Run inference on all datasets
+        rank0_print("\nRunning inference on math reasoning datasets...")
+        for dataset_name, dataset_path in dataset_paths.items():
+            if not os.path.exists(dataset_path):
+                rank0_print(f"Warning: Dataset file not found: {dataset_path}, skipping {dataset_name}")
+                continue
+            
+            output_path = os.path.join(predictions_base_dir, f"{dataset_name}_predictions.json")
+            
+            # Skip if predictions already exist and skip_existing is set
+            skip_existing = os.environ.get("SKIP_EXISTING", "false").lower() == "true"
+            if skip_existing and os.path.exists(output_path):
+                rank0_print(f"Skipping {dataset_name} (predictions already exist)")
+                continue
+            
+            try:
+                rank0_print(f"\nRunning inference on {dataset_name}...")
+                # Create a simple args object for inference
+                class InferenceArgs:
+                    def __init__(self):
+                        self.model_path = training_args.output_dir
+                        self.lora = False
+                        self.lora_path = None
+                        self.use_toolllama = True
+                        self.template = data_args.conv_template or "tool-llama-single-round"
+                        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+                        self.max_sequence_length = training_args.model_max_length
+                        self.dataset = dataset_name
+                        self.dataset_path = dataset_path
+                        self.output_path = output_path
+                        self.max_new_tokens = 512
+                        self.batch_size = 1
+                
+                inference_args = InferenceArgs()
+                # inference_model = load_inference_model(inference_args)
+                inference_model = trainer.model
+                run_inference(
+                    model=inference_model,
+                    dataset_name=dataset_name,
+                    dataset_path=dataset_path,
+                    output_path=output_path,
+                    template=inference_args.template,
+                    max_new_tokens=inference_args.max_new_tokens,
+                    batch_size=inference_args.batch_size
+                )
+                rank0_print(f"✓ Inference completed for {dataset_name}")
+            except Exception as e:
+                rank0_print(f"Error running inference on {dataset_name}: {e}")
+                import traceback
+                traceback.print_exc()
+                continue
+        
+        # Run evaluation on all datasets
+        rank0_print("\nRunning evaluation on math reasoning datasets...")
+        eval_results = {}
+        for dataset_name, dataset_path in dataset_paths.items():
+            predictions_path = os.path.join(predictions_base_dir, f"{dataset_name}_predictions.json")
+            
+            if not os.path.exists(predictions_path):
+                rank0_print(f"Warning: Predictions file not found: {predictions_path}, skipping evaluation for {dataset_name}")
+                continue
+            
+            if not os.path.exists(dataset_path):
+                rank0_print(f"Warning: Dataset file not found: {dataset_path}, skipping evaluation for {dataset_name}")
+                continue
+            
+            try:
+                rank0_print(f"\nEvaluating {dataset_name}...")
+                output_path = os.path.join(predictions_base_dir, "eval_results", dataset_name)
+                accuracy, results = evaluate_dataset(
+                    predictions_path=predictions_path,
+                    dataset=dataset_name,
+                    dataset_path=dataset_path,
+                    output_path=output_path,
+                    log_to_wandb=use_wandb
+                )
+                eval_results[dataset_name] = {
+                    "accuracy": accuracy,
+                    "correct": sum(1 for r in results if r['correct']),
+                    "total": len(results)
+                }
+                rank0_print(f"✓ Evaluation completed for {dataset_name}: Accuracy = {accuracy:.4f} ({accuracy*100:.2f}%)")
+            except Exception as e:
+                rank0_print(f"Error evaluating {dataset_name}: {e}")
+                import traceback
+                traceback.print_exc()
+                continue
+        
+        # Print summary
+        if eval_results:
+            rank0_print("\n" + "="*50)
+            rank0_print("Math Reasoning Evaluation Summary")
+            rank0_print("="*50)
+            for dataset_name, results in eval_results.items():
+                rank0_print(f"{dataset_name}: {results['accuracy']:.4f} ({results['accuracy']*100:.2f}%) - {results['correct']}/{results['total']}")
+            
+            # Log summary to wandb if available
+            if use_wandb:
+                try:
+                    import wandb
+                    if wandb.run is not None:
+                        summary_metrics = {f"eval/{name}/accuracy": res["accuracy"] for name, res in eval_results.items()}
+                        wandb.log(summary_metrics)
+                        rank0_print("\n✓ Evaluation results logged to wandb")
+                except Exception as e:
+                    rank0_print(f"Warning: Failed to log summary to wandb: {e}")
+        
+        rank0_print("\n" + "="*50)
+        rank0_print("Math Reasoning Pipeline Test Completed")
+        rank0_print("="*50 + "\n")
     trainer.save_state()
     safe_save_model_for_hf_trainer(trainer=trainer, output_dir=training_args.output_dir)
 

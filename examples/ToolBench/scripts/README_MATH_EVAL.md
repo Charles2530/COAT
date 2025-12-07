@@ -145,15 +145,33 @@ math_reasoning_eval_results/
 ```bash
 cd examples/ToolBench
 
-# 1. 下载数据集（如果还没有）
+# 1. 训练模型（可选，如果已有训练好的模型可跳过）
+bash scripts/train_toolllama_bf16.sh
+# 输出模型保存在 toolllama/ 目录
+
+# 2. 下载数据集（如果还没有）
 python scripts/download_math_datasets.py --data_dir data/math_datasets
 
-# 2. 生成模型预测（使用你的模型）
-# ... 你的推理代码生成预测文件 ...
+# 3. 使用训练好的模型生成预测
+# 方式1: 单个数据集
+bash scripts/inference_math_reasoning.sh \
+    --dataset svamp \
+    --model_path toolllama/
 
-# 3. 运行评估（最简单的方式）
-export SVAMP_PREDICTIONS="predictions/my_model_svamp.json"
-export GSM8K_PREDICTIONS="predictions/my_model_gsm8k.json"
+# 方式2: 所有数据集（批量）
+bash scripts/inference_all_math_datasets.sh \
+    --model_path toolllama/
+
+# 方式3: 使用 LoRA 模型
+bash scripts/inference_math_reasoning.sh \
+    --dataset gsm8k \
+    --model_path base_model/ \
+    --lora \
+    --lora_path lora_model/
+
+# 4. 运行评估
+export SVAMP_PREDICTIONS="predictions/math_reasoning/svamp_predictions.json"
+export GSM8K_PREDICTIONS="predictions/math_reasoning/gsm8k_predictions.json"
 
 bash scripts/eval_math_reasoning.sh
 ```

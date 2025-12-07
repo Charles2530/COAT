@@ -170,6 +170,7 @@ def download_math(data_dir: str) -> bool:
     
     # Try various HuggingFace paths
     hf_paths = [
+        "qwedsacf/competition_math",  # Primary source
         "hendrycks/competition_math",
         "lighteval/math",
         "math",
@@ -177,15 +178,18 @@ def download_math(data_dir: str) -> bool:
     
     for hf_path in hf_paths:
         try:
+            print(f"  Trying {hf_path}...")
             dataset = load_dataset(hf_path, split="test")
             output_file = os.path.join(math_dir, "test.json")
             dataset.to_json(output_file)
             print(f"  ✓ Downloaded MATH to {output_file}")
             return True
         except Exception as e:
+            print(f"  Failed with {hf_path}: {str(e)[:100]}")
             continue
     
     print("  ✗ MATH dataset download failed. Please download manually from:")
+    print("    https://huggingface.co/datasets/qwedsacf/competition_math")
     print("    https://huggingface.co/datasets/hendrycks/competition_math")
     print("    https://github.com/hendrycks/math")
     return False

@@ -42,7 +42,7 @@ quantize_model:
   babit: mxfp8_e4m3
   weight_memory_efficient: true
   attn_quantize: true
-  attn_quantize_forward_bit: hifp8
+  attn_quantize_forward_bit: hif8
   attn_quantize_backward_bit: mxfp8_e4m3
   group_size: 16
   

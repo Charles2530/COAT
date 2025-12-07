@@ -79,22 +79,39 @@ def download_gsm8k(data_dir: str) -> bool:
         return False
     
     try:
-        # Download test split
+        # Download test split - must specify 'main' config
+        print("  Loading GSM8K test split (config: 'main')...")
         test_dataset = load_dataset("gsm8k", "main", split="test")
         test_file = os.path.join(gsm8k_dir, "test.jsonl")
         test_dataset.to_json(test_file)
         print(f"  ✓ Downloaded GSM8K test to {test_file}")
         
         # Also download train for reference
+        print("  Loading GSM8K train split (config: 'main')...")
         train_dataset = load_dataset("gsm8k", "main", split="train")
         train_file = os.path.join(gsm8k_dir, "train.jsonl")
         train_dataset.to_json(train_file)
         print(f"  ✓ Downloaded GSM8K train to {train_file}")
         return True
+    except ValueError as e:
+        if "Config name is missing" in str(e):
+            print(f"  ✗ GSM8K download failed: Config name is required")
+            print("  Attempting with explicit 'main' config...")
+            try:
+                test_dataset = load_dataset("gsm8k", "main", split="test")
+                test_file = os.path.join(gsm8k_dir, "test.jsonl")
+                test_dataset.to_json(test_file)
+                print(f"  ✓ Downloaded GSM8K test to {test_file}")
+                return True
+            except Exception as e2:
+                print(f"  ✗ Retry failed: {e2}")
+        else:
+            print(f"  ✗ GSM8K download failed: {e}")
     except Exception as e:
         print(f"  ✗ GSM8K download failed: {e}")
         print("  Please download manually from: https://huggingface.co/datasets/gsm8k")
-        return False
+        print("  Note: Use 'main' config: load_dataset('gsm8k', 'main')")
+    return False
 
 
 def download_numglue(data_dir: str) -> bool:

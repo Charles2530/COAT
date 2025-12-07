@@ -1,18 +1,17 @@
-run_name: MXFP-OLMo-1B-COAT-Optimizer
+run_name: FakeQuant-Activation-OLMo-7B-MXFP
 seed: 6198
 dry_run: false
 
 wandb:
   name: ${run_name}
-  project: CoatOLMo-1B
-  entity: null
+  project: CoatOLMo-7B
 
 model:
-  d_model: 2048
-  n_heads: 16
-  n_layers: 16
-  mlp_ratio: 8
-  weight_tying: true
+  d_model: 4096
+  n_heads: 32
+  n_layers: 32
+  mlp_hidden_size: 22016
+  weight_tying: false
   alibi: false
   rope: true
   flash_attention: true
@@ -36,19 +35,22 @@ model:
   init_device: meta
   init_fn: mitchell
 
-quantize_optimizer:
-  use_quantize_optimizer: coat_fp8_adamw
-  qgroup_size: 128
-  first_order_bit: E4M3
-  first_order_expansion: expansion
-  second_order_bit: E4M3
-  second_order_expansion: expansion
-
+quantize_model:
+  use_quantize_model: coat_fake
+  backward_quantize: true
+  fabit: mxfp8_e4m3
+  babit: mxfp8_e4m3
+  weight_memory_efficient: true
+  attn_quantize: true
+  attn_quantize_forward_bit: mxfp8_e4m3
+  attn_quantize_backward_bit: mxfp8_e4m3
+  group_size: 16
+  
 compile: null  # causes instability on AMD GPUs
 
 optimizer:
   name: adamw
-  learning_rate: 4.0e-4
+  learning_rate: 3.0e-4
   weight_decay: 0.1
   betas:
   - 0.9
@@ -56,9 +58,11 @@ optimizer:
   metrics_log_interval: 10
 
 scheduler:
-  name: cosine_with_warmup
-  t_warmup: 2000
+  name: linear_with_warmup
+  t_warmup: 5000
   alpha_f: 0.1
+  grad_clip_warmup_steps: 1000
+  grad_clip_warmup_factor: 10.0
 
 tokenizer:
   identifier: allenai/eleuther-ai-gpt-neox-20b-pii-special
@@ -75,14 +79,15 @@ save_overwrite: true
 
 # load_path: ${path.check_exist:result/checkpoints/${run_name}/latest}
 
-max_duration: 739_328  # 3.1T tokens
+max_duration: 2e12T  # 2T tokens
 global_train_batch_size: 2048
-device_train_microbatch_size: 8
+device_train_microbatch_size: 2
+time_limit: null
 
 precision: amp_bf16
 
 fsdp:
-  wrapping_strategy: null
+  wrapping_strategy: by_block
   precision: mixed
 
 max_grad_norm: 1.0

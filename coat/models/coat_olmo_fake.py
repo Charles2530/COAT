@@ -54,16 +54,35 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
         super().__init__(layer_id, config, cache)
         self.qargs = qargs
         
-        # Determine quantization format
+        # Determine forward quantization format
         if hasattr(qargs, 'fabit') and qargs.fabit:
             if qargs.fabit == 'E4M3':
-                self.quant_format = 'fp8_e4m3'
+                self.quant_format = 'mxfp8_e4m3'
             elif qargs.fabit == 'E5M2':
-                self.quant_format = 'fp8_e5m2'
+                self.quant_format = 'mxfp8_e5m2'
             else:
-                self.quant_format = 'fp8_e5m2'  # default
+                self.quant_format = 'mxfp8_e5m2'  # default
         else:
-            self.quant_format = 'fp8_e5m2'  # default
+            self.quant_format = 'mxfp8_e5m2'  # default
+        
+        # Determine backward quantization format
+        if hasattr(qargs, 'babit') and qargs.babit:
+            if qargs.babit == 'E5M2':
+                self.backward_quant_format = 'mxfp8_e5m2'
+            elif qargs.babit == 'E4M3':
+                self.backward_quant_format = 'mxfp8_e4m3'
+            else:
+                self.backward_quant_format = 'mxfp8_e5m2'  # default
+        else:
+            self.backward_quant_format = 'mxfp8_e5m2'  # default
+        
+        # Determine whether to enable backward quantization
+        # Enable backward quantization if babit is set (not "100" which means no quantization)
+        self.backward_quantize = (
+            hasattr(qargs, 'babit') 
+            and qargs.babit 
+            and qargs.babit != "100"
+        )
     
     def forward(
         self,
@@ -83,7 +102,7 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
         4. ff_out (after activation)
         All quantized tensors are converted back to torch.bfloat16.
         """
-        from fake_quant_ops.quant.mxfp import quant_dequant_tensor, quant_dequant_qkv
+        from fake_quant_ops.quant.operators import quant_dequant_tensor_with_backward, quant_dequant_qkv
         
         # ========== Attention path ==========
         # Apply norm before attention
@@ -96,7 +115,12 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
             h = x
         
         # Quantize input to att_proj and convert back to bfloat16
-        h_quant = quant_dequant_tensor(h, self.quant_format)
+        h_quant = quant_dequant_tensor_with_backward(
+            h, 
+            forward_format=self.quant_format,
+            backward_quantize=self.backward_quantize,
+            backward_format=self.backward_quant_format
+        )
         h_quant = h_quant.to(torch.bfloat16)
         
         # Get QKV projections
@@ -109,9 +133,22 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
         
         # Apply additional fake quantization to QKV if enabled
         # Note: quant_dequant_qkv already converts to bfloat16 internally
-        if getattr(self.qargs, 'quant_qkv', False):
-            qkv_format = "fp8_e4m3" if getattr(self.qargs, 'qkvbit', None) == "mxfp8e4m3" else "fp8_e5m2"
-            q, k, v = quant_dequant_qkv(q, k, v, qkv_format)
+        if getattr(self.qargs, 'attn_quantize', False):
+            # Use attn_quantize_forward_bit, fallback to 'bf16' if not set
+            qkv_forward_format = getattr(self.qargs, 'attn_quantize_forward_bit', 'bf16')
+            # Use attn_quantize_backward_bit, fallback to model's backward_quant_format if not set
+            qkv_backward_format = (
+                getattr(self.qargs, 'attn_quantize_backward_bit', None) or 
+                self.backward_quant_format
+            )
+            # Directly read backward_quantize from config
+            use_backward_quant = getattr(self.qargs, 'backward_quantize', False)
+            q, k, v = quant_dequant_qkv(
+                q, k, v, 
+                forward_format=qkv_forward_format,
+                backward_quantize=use_backward_quant,
+                backward_format=qkv_backward_format
+            )
             # Ensure bfloat16 dtype (quant_dequant_qkv already does this, but keep for consistency with coat_olmo.py)
             q = q.to(torch.bfloat16)
             k = k.to(torch.bfloat16)
@@ -171,7 +208,12 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
                 att = self.attn_norm(att)
         
         # Quantize input to attn_out and convert back to bfloat16
-        att_quant = quant_dequant_tensor(att, self.quant_format)
+        att_quant = quant_dequant_tensor_with_backward(
+            att,
+            forward_format=self.quant_format,
+            backward_quantize=self.backward_quantize,
+            backward_format=self.backward_quant_format
+        )
         att_quant = att_quant.to(torch.bfloat16)
         
         # Attention output projection
@@ -190,7 +232,12 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
                 x = self.ff_norm(x)
         
         # Quantize input to ff_proj and convert back to bfloat16
-        x_quant = quant_dequant_tensor(x, self.quant_format)
+        x_quant = quant_dequant_tensor_with_backward(
+            x,
+            forward_format=self.quant_format,
+            backward_quantize=self.backward_quantize,
+            backward_format=self.backward_quant_format
+        )
         x_quant = x_quant.to(torch.bfloat16)
         
         # Feed-forward projection
@@ -203,7 +250,12 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
             x = self.act(x)
         
         # Quantize input to ff_out and convert back to bfloat16
-        x_quant = quant_dequant_tensor(x, self.quant_format)
+        x_quant = quant_dequant_tensor_with_backward(
+            x,
+            forward_format=self.quant_format,
+            backward_quantize=self.backward_quantize,
+            backward_format=self.backward_quant_format
+        )
         x_quant = x_quant.to(torch.bfloat16)
         
         # Output projection
@@ -267,6 +319,18 @@ class CoatOLMoFake(OLMo):
                         block_group[i] = fake_block
         
         log.info("Initialized CoatOLMoFake with fake quantization using fake_quant_ops")
-        log.info(f"Quantization format: {getattr(qargs, 'fabit', 'fp8_e5m2')}")
-        if getattr(qargs, 'quant_qkv', False):
-            log.info(f"QKV fake quantization enabled: {getattr(qargs, 'qkvbit', 'fp8_e5m2')}")
+        log.info(f"Forward quantization format: {getattr(qargs, 'fabit', 'E5M2')}")
+        if getattr(qargs, 'babit', None) and getattr(qargs, 'babit', None) != "100":
+            log.info(f"Backward quantization enabled: {getattr(qargs, 'babit', 'E5M2')}")
+        else:
+            log.info("Backward quantization disabled (using STE)")
+        if getattr(qargs, 'attn_quantize', False):
+            forward_bit = getattr(qargs, 'attn_quantize_forward_bit', 'bf16')
+            backward_bit = getattr(qargs, 'attn_quantize_backward_bit', None)
+            backward_quantize = getattr(qargs, 'backward_quantize', False)
+            if backward_quantize:
+                # If attn_quantize_backward_bit is set, use it; otherwise will use model's backward_quant_format
+                backward_format_display = backward_bit if backward_bit else 'model_default'
+                log.info(f"Attention QKV fake quantization enabled: forward={forward_bit}, backward={backward_format_display}")
+            else:
+                log.info(f"Attention QKV fake quantization enabled: forward={forward_bit}, backward=disabled")

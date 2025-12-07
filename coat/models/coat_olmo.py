@@ -1027,13 +1027,27 @@ class CoatOLMoSequentialBlock(CoatOLMoBlock):
         q, k, v = qkv.split(self.fused_dims, dim=-1)
 
         # mxfp fake quant qkv
-        if getattr(self.qargs, 'quant_qkv', False):
-            from fake_quant_ops.quant.mxfp import quant_dequant_qkv
-            elem_format = "fp8_e4m3" if self.qargs.qkvbit == "mxfp8e4m3" else "fp8_e5m2"
-            q,k,v = quant_dequant_qkv(q,k,v,elem_format)
-            q =q.to(torch.bfloat16)
-            k =k.to(torch.bfloat16)
-            v =v.to(torch.bfloat16)
+        if getattr(self.qargs, 'attn_quantize', False):
+            from fake_quant_ops.quant.operators import quant_dequant_qkv
+            # Use attn_quantize_forward_bit, fallback to 'bf16' if not set
+            qkv_forward_format = getattr(self.qargs, 'attn_quantize_forward_bit', 'bf16')
+            # Use attn_quantize_backward_bit, fallback to model's backward_quant_format if not set
+            qkv_backward_format = (
+                getattr(self.qargs, 'attn_quantize_backward_bit', None) or 
+                self.backward_quant_format
+            )
+            # Directly read backward_quantize from config
+            use_backward_quant = getattr(self.qargs, 'backward_quantize', False)
+            q, k, v = quant_dequant_qkv(
+                q, k, v, 
+                forward_format=qkv_forward_format,
+                backward_quantize=use_backward_quant,
+                backward_format=qkv_backward_format
+            )
+            # Ensure bfloat16 dtype (quant_dequant_qkv already does this, but keep for consistency with coat_olmo.py)
+            q = q.to(torch.bfloat16)
+            k = k.to(torch.bfloat16)
+            v = v.to(torch.bfloat16)
 
         # Get attention scores.
         att, cache = self.attention(

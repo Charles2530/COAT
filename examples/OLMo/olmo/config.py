@@ -935,14 +935,29 @@ class QuantActivationConfig(BaseConfig):
     The quantization group size of non-linear layers.
     """
 
-    quant_qkv: Optional[bool] = False
+    attn_quantize: Optional[bool] = False
     """
     Whether to apply fake quantization to QKV tensors before FlashAttention.
     """
 
-    qkvbit: Optional[str] = None
+    attn_quantize_bit: Optional[str] = None
     """
-    Quantization format for QKV fake quantization. Options: "mxfp8e4m3", "mxfp8e5m2", etc.
+    Quantization format for attention QKV fake quantization. Options: "mxfp8_e4m3", "mxfp8_e5m2", "bf16", etc.
+    Deprecated: Use attn_quantize_forward_bit and attn_quantize_backward_bit for separate forward/backward control.
+    """
+
+    attn_quantize_forward_bit: Optional[str] = None
+    """
+    Forward quantization format for attention QKV fake quantization. 
+    Options: "mxfp8_e4m3", "mxfp8_e5m2", "bf16", etc.
+    If not set, falls back to attn_quantize_bit or defaults to the model's backward_quant_format.
+    """
+
+    attn_quantize_backward_bit: Optional[str] = None
+    """
+    Backward quantization format for attention QKV fake quantization.
+    Options: "mxfp8_e4m3", "mxfp8_e5m2", "bf16", etc.
+    If not set, falls back to the model's backward_quant_format.
     """
 
     # ========================== Fake Quantization Related Arguments ==========================

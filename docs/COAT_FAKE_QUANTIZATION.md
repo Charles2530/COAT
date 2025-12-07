@@ -18,16 +18,16 @@ quantize_model:
   fwbit: E4M3  # 前向权重格式
   fobit: E4M3  # 前向输出格式
   
-  # 可选的 QKV 模拟量化
-  quant_qkv: true
-  qkvbit: mxfp8e4m3  # 或 mxfp8e5m2
+  # 可选的 Attention QKV 模拟量化
+  attn_quantize: true
+  attn_quantize_bit: mxfp8_e4m3  # 或 mxfp8_e5m2, bf16 等
 ```
 
 ### 2. 支持的量化格式
 
 - **E4M3**: 转换为 `fp8_e4m3` (4位指数，3位尾数)
 - **E5M2**: 转换为 `fp8_e5m2` (5位指数，2位尾数)
-- **QKV 量化**: `mxfp8e4m3` 或 `mxfp8e5m2`
+- **Attention QKV 量化**: `mxfp8_e4m3`, `mxfp8_e5m2`, `bf16` 等
 
 ### 3. 实现细节
 
@@ -38,7 +38,7 @@ quantize_model:
    - 权重量化
    - 输出量化
 
-2. **QKV 量化**: 在 Attention 计算前对 Q、K、V 张量进行模拟量化（如果启用）
+2. **Attention QKV 量化**: 在 Attention 计算前对 Q、K、V 张量进行模拟量化（如果启用 `attn_quantize`）
 
 3. **Straight-Through Estimator (STE)**: 使用 STE 保持梯度流
 

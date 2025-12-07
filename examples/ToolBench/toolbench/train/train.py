@@ -356,8 +356,30 @@ def train():
                         self.batch_size = 1
                 
                 inference_args = InferenceArgs()
-                # inference_model = load_inference_model(inference_args)
-                inference_model = trainer.model
+                # Create an adapter wrapper for trainer.model to work with inference functions
+                # trainer.model is a transformers model, but inference expects ToolLLaMA-like interface
+                class ModelAdapter:
+                    def __init__(self, model, tokenizer, device, max_sequence_length):
+                        self.model = model
+                        self.tokenizer = tokenizer
+                        self.device = device
+                        self.max_sequence_length = max_sequence_length
+                        self.use_gpu = (device == "cuda")
+                
+                # Unwrap model if it's wrapped by DDP/FSDP
+                unwrapped_model = trainer.model
+                if hasattr(unwrapped_model, 'module'):  # DDP wrapper
+                    unwrapped_model = unwrapped_model.module
+                
+                # Set model to eval mode
+                unwrapped_model.eval()
+                
+                inference_model = ModelAdapter(
+                    model=unwrapped_model,
+                    tokenizer=tokenizer,
+                    device=inference_args.device,
+                    max_sequence_length=inference_args.max_sequence_length
+                )
                 run_inference(
                     model=inference_model,
                     dataset_name=dataset_name,

@@ -1,4 +1,4 @@
-run_name: OLMo-1B-COAT-Activation
+run_name: FakeQuant-Activation-OLMo-1B-Reverse
 seed: 6198
 dry_run: false
 
@@ -37,14 +37,14 @@ model:
   init_fn: mitchell
 
 quantize_model:
-  use_quantize_model: coat_real
-  fabit: E4M3
-  fwbit: E4M3
-  fobit: E4M3
-  bwbit: E5M2
-  babit: E5M2
-  bobit: E5M2
+  use_quantize_model: coat_fake
+  backward_quantize: true
+  fabit: hif8
+  babit: hif8
   weight_memory_efficient: true
+  attn_quantize: true
+  attn_quantize_forward_bit: mxfp8_e4m3
+  attn_quantize_backward_bit: hif8
   group_size: 16
   
 compile: null  # causes instability on AMD GPUs

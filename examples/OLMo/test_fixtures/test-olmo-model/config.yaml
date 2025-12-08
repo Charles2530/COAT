@@ -54,7 +54,7 @@ data:
 restore_dataloader: true
 fast_forward_batches: null
 evaluators: []
-eval_interval: 1000
+eval_interval: 500
 tokenizer:
   identifier: gpt2
   truncate_direction: right

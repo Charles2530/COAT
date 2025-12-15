@@ -1,4 +1,4 @@
-run_name: FakeQuant-Activation-OLMo-7B-MXFP
+run_name: FakeQuant-Activation-OLMo-7B-MXFP-4
 seed: 6198
 dry_run: false
 

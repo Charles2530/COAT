@@ -40,7 +40,7 @@ quantize_model:
   backward_quantize: true
   fabit: mxfp4_e2m1
   babit: mxfp4_e2m1
-  minus_exp: -1
+  minus_exp: 1
   weight_memory_efficient: true
   attn_quantize: false
   attn_quantize_forward_bit: mxfp4_e2m1

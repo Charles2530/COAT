@@ -941,7 +941,7 @@ class QuantActivationConfig(BaseConfig):
     The quantization group size of non-linear layers.
     """
 
-    minus_exp: Optional[int] = None
+    minus_exp: Optional[int|str] = None
     """
     Shared exponent offset for MX quantization formats; subtract this from the computed exponent.
     """

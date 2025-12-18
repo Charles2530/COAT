@@ -29,7 +29,7 @@ from toolbench.tool_conversation import SeparatorStyle
 from toolbench.model.model_adapter import get_conversation_template
 from toolbench.train.llama_condense_monkey_patch import replace_llama_with_condense
 # Import CoatLLaMA fake model to register the model class
-sys.path.append(os.path.join(os.path.dirname(__file__), '.'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../../..'))
 from toolbench.model.coat_llama_fake import CoatLlamaFakeConfig, CoatLlamaFakeForCausalLM
 
 # Import inference and evaluation functions (will be checked later when needed)

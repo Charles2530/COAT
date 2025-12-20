@@ -6,7 +6,7 @@ export SAVE_DIR="toolllama/fp8"
 export WANDB_RUN_NAME="${WANDB_RUN_NAME:-toolllama-fp8-$(date +%Y%m%d-%H%M%S)}"
 
 # We double the batch size here
-torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train_fp8.py \
+torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train.py \
     --model_name_or_path $MODEL_NAME  \
     --fp8_model_name_or_path $CONVERTED_MODEL_PATH  \
     --data_path  data/toolllama_G123_dfs_train.json \

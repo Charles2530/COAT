@@ -31,7 +31,6 @@ from toolbench.train.llama_condense_monkey_patch import replace_llama_with_conde
 # Import CoatLLaMA fake model to register the model class
 from coat.models.coat_llama_fake import CoatLlamaFakeConfig, CoatLlamaFakeForCausalLM
 
-
 # Import inference and evaluation functions (will be checked later when needed)
 INFERENCE_AVAILABLE = False
 try:

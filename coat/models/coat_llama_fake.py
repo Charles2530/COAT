@@ -455,8 +455,6 @@ class CoatLlamaFakeModel(LlamaPreTrainedModel):
         cache_position: Optional[torch.LongTensor] = None,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
 
-    _update_causal_mask = LlamaModel._update_causal_mask
-        
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
@@ -538,6 +536,8 @@ class CoatLlamaFakeModel(LlamaPreTrainedModel):
             hidden_states=all_hidden_states,
             attentions=all_self_attns,
         )
+        
+    _update_causal_mask = LlamaModel._update_causal_mask
 
 class CoatLlamaFakeForCausalLM(CoatLlamaFakeModel, LlamaForCausalLM):
     # Mixin LlamaForCausalLM to get generation methods, but CoatLlamaFakeModel is the base for 'model' attribute logic

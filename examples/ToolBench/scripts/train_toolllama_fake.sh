@@ -1,23 +1,38 @@
-export PYTHONPATH=./
+#!/bin/bash
+
+# ================= 配置区域 =================
+# 1. 定义关键路径（使用服务器绝对路径）
+COAT_ROOT="/mnt/lm_data_afs/wangzining/charles/COAT"
+TOOLBENCH_ROOT="/mnt/lm_data_afs/wangzining/charles/COAT/examples/ToolBench"
+
+# 2. 核心修正：将 COAT 和 ToolBench 根目录加入 PYTHONPATH
+# 这样 train.py 里的 "from coat.models ..." 才能生效
+export PYTHONPATH=$PYTHONPATH:$COAT_ROOT:$TOOLBENCH_ROOT
+
+# 3. 环境变量设置
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export MODEL_NAME="/mnt/lm_data_afs/wangzining/charles/models/Llama-2-7b-hf"
-export CONVERTED_MODEL_PATH="converted_models/llama2-7b-hf"
-export SAVE_DIR="toolllama/fp8"
-export WANDB_RUN_NAME="${WANDB_RUN_NAME:-toolllama-fp8-$(date +%Y%m%d-%H%M%S)}"
+export SAVE_DIR="toolllama/fake_quant_mxfp4"
+export WANDB_RUN_NAME="${WANDB_RUN_NAME:-toolllama-fake-mxfp4-$(date +%Y%m%d-%H%M%S)}"
 
-TOOLBENCH_ROOT="/home/charles/codes/ai/COAT/examples/ToolBench"
-export PYTHONPATH=$PYTHONPATH:$TOOLBENCH_ROOT
+# 确保输出目录存在
+mkdir -p $SAVE_DIR
 
-# We double the batch size here
+# 4. 切换到 ToolBench 目录，确保 data/ 相对路径有效
+cd $TOOLBENCH_ROOT
+
+echo "Starting training with CoatLlamaFake..."
+echo "Model Path: $MODEL_NAME"
+
+# ================= 启动命令 =================
 torchrun --nproc_per_node=8 --master_port=20001 $TOOLBENCH_ROOT/toolbench/train/train.py \
-    --model_name_or_path $MODEL_NAME  \
-    --fp8_model_name_or_path $CONVERTED_MODEL_PATH  \
-    --data_path  data/toolllama_G123_dfs_train.json \
-    --eval_data_path  data/toolllama_G123_dfs_eval.json \
+    --model_name_or_path $MODEL_NAME \
+    --data_path data/toolllama_G123_dfs_train.json \
+    --eval_data_path data/toolllama_G123_dfs_eval.json \
     --conv_template tool-llama-single-round \
     --bf16 True \
     --output_dir $SAVE_DIR \
-    --num_train_epochs 3\
+    --num_train_epochs 3 \
     --per_device_train_batch_size 2 \
     --per_device_eval_batch_size 2 \
     --gradient_accumulation_steps 4 \
@@ -31,13 +46,16 @@ torchrun --nproc_per_node=8 --master_port=20001 $TOOLBENCH_ROOT/toolbench/train/
     --lr_scheduler_type "cosine" \
     --logging_steps 1 \
     --fsdp "full_shard auto_wrap" \
-    --fsdp_transformer_layer_cls_to_wrap 'CoatLlamaDecoderLayer' \
+    --fsdp_transformer_layer_cls_to_wrap 'CoatLlamaFakeDecoderLayer' \
     --tf32 True \
     --source_model_max_length 4096 \
     --model_max_length 4096 \
     --lazy_preprocess True \
     --run_name $WANDB_RUN_NAME \
-    --report_to wandb
+    --report_to wandb \
+    --fabit E4M3 \
+    --babit E5M2 \
+    --attn_quantize False
 
     # Below are the default value for FP8 training
     # --quantize_model true \

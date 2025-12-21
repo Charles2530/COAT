@@ -36,7 +36,7 @@ torchrun --nproc_per_node=8 --master_port=20001 $TOOLBENCH_ROOT/toolbench/train/
     --per_device_train_batch_size 2 \
     --per_device_eval_batch_size 2 \
     --gradient_accumulation_steps 4 \
-    --evaluation_strategy "epoch" \
+    --eval_strategy "epoch" \
     --prediction_loss_only \
     --save_strategy "epoch" \
     --save_total_limit 8 \
@@ -46,7 +46,7 @@ torchrun --nproc_per_node=8 --master_port=20001 $TOOLBENCH_ROOT/toolbench/train/
     --lr_scheduler_type "cosine" \
     --logging_steps 1 \
     --fsdp "full_shard auto_wrap" \
-    --fsdp_transformer_layer_cls_to_wrap 'CoatLlamaFakeDecoderLayer' \
+    --fsdp_config '{"transformer_layer_cls_to_wrap": ["CoatLlamaFakeDecoderLayer"]}' \
     --tf32 True \
     --source_model_max_length 4096 \
     --model_max_length 4096 \

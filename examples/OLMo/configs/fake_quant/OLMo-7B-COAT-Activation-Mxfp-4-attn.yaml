@@ -71,8 +71,8 @@ tokenizer:
 save_folder: result/checkpoints/${run_name}
 save_overwrite: true
 # Sharded checkpoints (best for restarts)
-save_interval: 1000
-save_num_checkpoints_to_keep: 9
+save_interval: 100
+save_num_checkpoints_to_keep: 3
 # Unsharded checkpoints (for final storage)
 save_interval_unsharded: 10000
 save_num_unsharded_checkpoints_to_keep: -1

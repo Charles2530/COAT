@@ -36,6 +36,7 @@ torchrun --nproc_per_node=8 --master_port=20001 $TOOLBENCH_ROOT/toolbench/train/
     --per_device_train_batch_size 2 \
     --per_device_eval_batch_size 2 \
     --gradient_accumulation_steps 4 \
+    --gradient_checkpointing True \
     --eval_strategy "epoch" \
     --prediction_loss_only \
     --save_strategy "epoch" \

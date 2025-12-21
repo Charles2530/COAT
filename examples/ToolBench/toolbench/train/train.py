@@ -418,11 +418,18 @@ def train():
                         self.max_sequence_length = max_sequence_length
                         self.use_gpu = (device == "cuda")
                 
-                # Unwrap model if it's wrapped by DDP/FSDP
+                # Unwrap only DDP; keep FSDP wrapper so parameters stay unflattened
                 unwrapped_model = trainer.model
-                if hasattr(unwrapped_model, 'module'):  # DDP wrapper
+                is_fsdp = False
+                try:
+                    from torch.distributed.fsdp import FullyShardedDataParallel as FSDP  # type: ignore
+                    is_fsdp = isinstance(unwrapped_model, FSDP)
+                except Exception:
+                    pass
+
+                if hasattr(unwrapped_model, 'module') and not is_fsdp:
                     unwrapped_model = unwrapped_model.module
-                
+
                 # Set model to eval mode
                 unwrapped_model.eval()
                 

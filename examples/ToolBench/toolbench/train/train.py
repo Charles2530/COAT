@@ -27,6 +27,7 @@ from transformers.trainer_pt_utils import LabelSmoother
 
 # Register Coat LLaMA fake quantization implementation so AutoConfig/AutoModel can resolve it
 import coat.models.coat_llama_fake  # noqa: F401
+from coat.models.coat_llama_fake import CoatLlamaFakeForCausalLM
 
 from toolbench.tool_conversation import SeparatorStyle
 from toolbench.model.model_adapter import get_conversation_template
@@ -320,12 +321,12 @@ def train():
     world_size = int(os.environ.get("WORLD_SIZE", 1))
     ddp = world_size != 1
     device_map = {"": int(os.environ.get("LOCAL_RANK") or 0)} if ddp else None
-    model = transformers.AutoModelForCausalLM.from_pretrained(
+    model = CoatLlamaFakeForCausalLM.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
         device_map=device_map,
         config=config,
-        trust_remote_code=True,  # allow loading custom CoatLlamaFake classes
+        trust_remote_code=True,
     )
     model.config.use_cache = False
     trainer = Trainer(

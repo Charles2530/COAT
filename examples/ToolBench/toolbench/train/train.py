@@ -292,9 +292,9 @@ def train():
         cache_dir=training_args.cache_dir,
         trust_remote_code=True,
     )
-        # Force the fake-quant model type so AutoModel picks CoatLlamaFake* implementations
-        config.model_type = "fp8_llama_fake"
-        config.architectures = ["CoatLlamaFakeForCausalLM"]
+    # Force the fake-quant model type so AutoModel picks CoatLlamaFake* implementations
+    config.model_type = "fp8_llama_fake"
+    config.architectures = ["CoatLlamaFakeForCausalLM"]
 
     coat_fp8_args = getattr(config, "coat_fp8_args", {}) or {}
     if model_args.fabit is not None:

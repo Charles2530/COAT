@@ -18,7 +18,7 @@ except ImportError:
     WANDB_AVAILABLE = False
 
 # Add dataset module to path
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '.'))
 try:
     from dataset.math_datasets import (
         load_svamp, load_gsm8k, load_numglue, load_mathematica,

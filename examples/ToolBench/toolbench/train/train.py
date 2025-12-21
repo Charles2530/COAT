@@ -28,8 +28,6 @@ from transformers.trainer_pt_utils import LabelSmoother
 from toolbench.tool_conversation import SeparatorStyle
 from toolbench.model.model_adapter import get_conversation_template
 from toolbench.train.llama_condense_monkey_patch import replace_llama_with_condense
-# Import CoatLLaMA fake model to register the model class
-from coat.models.coat_llama_fake import CoatLlamaFakeConfig, CoatLlamaFakeForCausalLM
 
 # Import inference and evaluation functions (will be checked later when needed)
 INFERENCE_AVAILABLE = False
@@ -48,21 +46,6 @@ torch.set_printoptions(profile="full")
 @dataclass
 class ModelArguments:
     model_name_or_path: Optional[str] = field(default="facebook/opt-125m")
-
-    # === 新增：伪量化参数 ===
-    fabit: str = field(
-        default="E4M3", 
-        metadata={"help": "Forward activation bits (e.g., E4M3, E5M2, bf16)."}
-    )
-    babit: str = field(
-        default="E5M2", 
-        metadata={"help": "Backward activation bits (e.g., E5M2, bf16)."}
-    )
-    attn_quantize: bool = field(
-        default=False, 
-        metadata={"help": "Whether to quantize attention QKV."}
-    )
-    # 如果有其他参数如 minus_exp 也可以在这里加
 
 
 @dataclass
@@ -300,40 +283,11 @@ def train():
     world_size = int(os.environ.get("WORLD_SIZE", 1))
     ddp = world_size != 1
     device_map = {"": int(os.environ.get("LOCAL_RANK") or 0)} if ddp else None
-    # === 修改开始 ===
-    # 1. 构建伪量化参数字典
-    # 注意：确保你在 ModelArguments 里已经添加了 fabit, babit 等参数
-    coat_fp8_args = {
-        "fabit": getattr(model_args, "fabit", "E4M3"),
-        "babit": getattr(model_args, "babit", "E5M2"),
-        "attn_quantize": getattr(model_args, "attn_quantize", False),
-        "backward_quantize": True if getattr(model_args, "babit", "E5M2") != "bf16" else False,
-    }
-    
-    if local_rank == 0:
-        print(f"Loading CoatLlamaFake with args: {coat_fp8_args}")
-
-    # 2. 加载 Config 并注入参数
-    config = transformers.AutoConfig.from_pretrained(
+    model = transformers.AutoModelForCausalLM.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
-        trust_remote_code=True,
+        device_map=device_map
     )
-    # 强制注入参数，供 CoatLlamaFakeConfig 读取
-    setattr(config, "coat_fp8_args", coat_fp8_args)
-
-    # 3. 使用自定义类加载模型
-    # 注意：这里需要确保文件头部已经 import 了 CoatLlamaFakeForCausalLM
-    model = CoatLlamaFakeForCausalLM.from_pretrained(
-        model_args.model_name_or_path,
-        config=config,  # 传入修改后的 config
-        cache_dir=training_args.cache_dir,
-        device_map=device_map,
-        trust_remote_code=True,
-    )
-    
-    model.config.use_cache = False
-    # === 修改结束 ===
     model.config.use_cache = False
     trainer = Trainer(
         model=model, tokenizer=tokenizer, args=training_args, **data_module

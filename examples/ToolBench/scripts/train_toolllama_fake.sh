@@ -48,6 +48,11 @@ torchrun --nproc_per_node=8 --master_port=20001 $TOOLBENCH_ROOT/toolbench/train/
     --warmup_ratio 0.04 \
     --lr_scheduler_type "cosine" \
     --logging_steps 1 \
+    # optimizer states: disable FP8 quant and expansion
+    --first_order_expansion false \
+    --second_order_expansion false \
+    --first_order_bit BF16 \
+    --second_order_bit BF16 \
     --fsdp "full_shard auto_wrap" \
     --fsdp_config '{"transformer_layer_cls_to_wrap": ["CoatLlamaFakeDecoderLayer"]}' \
     --tf32 True \

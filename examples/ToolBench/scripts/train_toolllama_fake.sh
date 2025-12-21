@@ -53,9 +53,10 @@ torchrun --nproc_per_node=8 --master_port=20001 $TOOLBENCH_ROOT/toolbench/train/
     --lazy_preprocess True \
     --run_name $WANDB_RUN_NAME \
     --report_to wandb \
-    --fabit E4M3 \
+    --fabit MXFP4 \
     --babit E5M2 \
-    --attn_quantize False
+    --attn_quantize False \
+    --minus_exp 0
 
     # Below are the default value for FP8 training
     # --quantize_model true \

@@ -25,6 +25,9 @@ import transformers
 from transformers import Trainer
 from transformers.trainer_pt_utils import LabelSmoother
 
+# Register Coat LLaMA fake quantization implementation so AutoConfig/AutoModel can resolve it
+import coat.models.coat_llama_fake  # noqa: F401
+
 from toolbench.tool_conversation import SeparatorStyle
 from toolbench.model.model_adapter import get_conversation_template
 from toolbench.train.llama_condense_monkey_patch import replace_llama_with_condense
@@ -286,7 +289,8 @@ def train():
     model = transformers.AutoModelForCausalLM.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
-        device_map=device_map
+        device_map=device_map,
+        trust_remote_code=True,  # allow loading custom CoatLlamaFake classes
     )
     model.config.use_cache = False
     trainer = Trainer(

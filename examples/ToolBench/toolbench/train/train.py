@@ -49,6 +49,18 @@ torch.set_printoptions(profile="full")
 @dataclass
 class ModelArguments:
     model_name_or_path: Optional[str] = field(default="facebook/opt-125m")
+    fabit: Optional[str] = field(
+        default=None, metadata={"help": "Fake-quant forward bit type (e.g., MXFP4)."}
+    )
+    babit: Optional[str] = field(
+        default=None, metadata={"help": "Fake-quant backward bit type (e.g., E5M2)."}
+    )
+    attn_quantize: Optional[bool] = field(
+        default=None, metadata={"help": "Enable attention quantization when using fake quant."}
+    )
+    minus_exp: Optional[int] = field(
+        default=None, metadata={"help": "Minus exponent offset for fake quantization."}
+    )
 
 
 @dataclass
@@ -273,6 +285,24 @@ def train():
         # ratio = N means the sequence length is expanded by N, remember to change the model_max_length to 8192 (2048 * ratio) for ratio = 4
         replace_llama_with_condense(ratio=condense_ratio)
     local_rank = training_args.local_rank
+
+    # Load config and inject fake-quant overrides coming from CLI args
+    config = transformers.AutoConfig.from_pretrained(
+        model_args.model_name_or_path,
+        cache_dir=training_args.cache_dir,
+        trust_remote_code=True,
+    )
+    coat_fp8_args = getattr(config, "coat_fp8_args", {}) or {}
+    if model_args.fabit is not None:
+        coat_fp8_args["fabit"] = model_args.fabit
+    if model_args.babit is not None:
+        coat_fp8_args["babit"] = model_args.babit
+    if model_args.attn_quantize is not None:
+        coat_fp8_args["attn_quantize"] = model_args.attn_quantize
+    if model_args.minus_exp is not None:
+        coat_fp8_args["minus_exp"] = model_args.minus_exp
+    config.coat_fp8_args = coat_fp8_args
+
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
@@ -290,6 +320,7 @@ def train():
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
         device_map=device_map,
+        config=config,
         trust_remote_code=True,  # allow loading custom CoatLlamaFake classes
     )
     model.config.use_cache = False

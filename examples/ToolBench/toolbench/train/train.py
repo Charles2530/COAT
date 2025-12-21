@@ -287,26 +287,37 @@ def train():
         replace_llama_with_condense(ratio=condense_ratio)
     local_rank = training_args.local_rank
 
-    # Load config and inject fake-quant overrides coming from CLI args
+    # Load config; only switch to fake-quant path when fake args are provided
     config = transformers.AutoConfig.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
         trust_remote_code=True,
     )
-    # Force the fake-quant model type so AutoModel picks CoatLlamaFake* implementations
-    config.model_type = "fp8_llama_fake"
-    config.architectures = ["CoatLlamaFakeForCausalLM"]
 
-    coat_fp8_args = getattr(config, "coat_fp8_args", {}) or {}
-    if model_args.fabit is not None:
-        coat_fp8_args["fabit"] = model_args.fabit
-    if model_args.babit is not None:
-        coat_fp8_args["babit"] = model_args.babit
-    if model_args.attn_quantize is not None:
-        coat_fp8_args["attn_quantize"] = model_args.attn_quantize
-    if model_args.minus_exp is not None:
-        coat_fp8_args["minus_exp"] = model_args.minus_exp
-    config.coat_fp8_args = coat_fp8_args
+    use_fake = any(
+        x is not None
+        for x in (
+            model_args.fabit,
+            model_args.babit,
+            model_args.attn_quantize,
+            model_args.minus_exp,
+        )
+    )
+
+    if use_fake:
+        config.model_type = "fp8_llama_fake"
+        config.architectures = ["CoatLlamaFakeForCausalLM"]
+
+        coat_fp8_args = getattr(config, "coat_fp8_args", {}) or {}
+        if model_args.fabit is not None:
+            coat_fp8_args["fabit"] = model_args.fabit
+        if model_args.babit is not None:
+            coat_fp8_args["babit"] = model_args.babit
+        if model_args.attn_quantize is not None:
+            coat_fp8_args["attn_quantize"] = model_args.attn_quantize
+        if model_args.minus_exp is not None:
+            coat_fp8_args["minus_exp"] = model_args.minus_exp
+        config.coat_fp8_args = coat_fp8_args
 
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         model_args.model_name_or_path,
@@ -321,7 +332,8 @@ def train():
     world_size = int(os.environ.get("WORLD_SIZE", 1))
     ddp = world_size != 1
     device_map = {"": int(os.environ.get("LOCAL_RANK") or 0)} if ddp else None
-    model = CoatLlamaFakeForCausalLM.from_pretrained(
+    model_cls = CoatLlamaFakeForCausalLM if use_fake else transformers.AutoModelForCausalLM
+    model = model_cls.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
         device_map=device_map,

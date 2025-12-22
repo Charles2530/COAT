@@ -37,11 +37,9 @@ torchrun --nproc_per_node=8 --master_port=20001 $TOOLBENCH_ROOT/toolbench/train/
     --per_device_eval_batch_size 2 \
     --gradient_accumulation_steps 4 \
     --gradient_checkpointing True \
-    # 5 steps save
     --eval_strategy "steps" \
     --eval_steps 5 \
     --prediction_loss_only \
-    # 5 steps save
     --save_strategy "steps" \
     --save_steps 5 \
     --save_total_limit 8 \
@@ -50,7 +48,6 @@ torchrun --nproc_per_node=8 --master_port=20001 $TOOLBENCH_ROOT/toolbench/train/
     --warmup_ratio 0.04 \
     --lr_scheduler_type "cosine" \
     --logging_steps 1 \
-    # optimizer states: disable FP8 quant and expansion
     --first_order_expansion false \
     --second_order_expansion false \
     --first_order_bit BF16 \
@@ -63,8 +60,8 @@ torchrun --nproc_per_node=8 --master_port=20001 $TOOLBENCH_ROOT/toolbench/train/
     --lazy_preprocess True \
     --run_name $WANDB_RUN_NAME \
     --report_to wandb \
-    --fabit nvfp4_e2m1 \
-    --babit nvfp8_e5m2 \
+    --fabit mxfp4_e2m1 \
+    --babit mxfp4_e2m1 \
     --attn_quantize False
 
     # Below are the default value for FP8 training

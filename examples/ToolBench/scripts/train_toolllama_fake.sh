@@ -38,10 +38,8 @@ torchrun --nproc_per_node=8 --master_port=20001 $TOOLBENCH_ROOT/toolbench/train/
     --gradient_accumulation_steps 4 \
     --gradient_checkpointing True \
     --eval_strategy "steps" \
-    --eval_steps 5 \
+    --eval_steps 100 \
     --prediction_loss_only \
-    --save_strategy "steps" \
-    --save_steps 5 \
     --save_total_limit 8 \
     --learning_rate 5e-5 \
     --weight_decay 0. \

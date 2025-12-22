@@ -16,10 +16,8 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train.py \
     --per_device_eval_batch_size 2 \
     --gradient_accumulation_steps 8 \
     --eval_strategy "steps" \
-    --eval_steps 5 \
+    --eval_steps 100 \
     --prediction_loss_only \
-    --eval_strategy "steps" \
-    --eval_steps 5 \
     --save_total_limit 8 \
     --learning_rate 5e-5 \
     --weight_decay 0. \

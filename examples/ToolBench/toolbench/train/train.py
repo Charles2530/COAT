@@ -82,6 +82,11 @@ class DataArguments:
 class TrainingArguments(transformers.TrainingArguments):
     cache_dir: Optional[str] = field(default=None)
     optim: str = field(default="adamw_torch")
+    # Allow optimizer-state quant args to be parsed (passed through CLI but unused here)
+    first_order_expansion: str = field(default="false")
+    second_order_expansion: str = field(default="false")
+    first_order_bit: str = field(default="BF16")
+    second_order_bit: str = field(default="BF16")
     source_model_max_length: int = field(
         default=2048,
         metadata={

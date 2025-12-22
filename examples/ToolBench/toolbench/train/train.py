@@ -27,7 +27,7 @@ from transformers.trainer_pt_utils import LabelSmoother
 
 # Register Coat LLaMA fake quantization implementation so AutoConfig/AutoModel can resolve it
 import coat.models.coat_llama_fake  # noqa: F401
-from coat.models.coat_llama_fake import CoatLlamaFakeForCausalLM
+from coat.models.coat_llama_fake import CoatLlamaFakeConfig, CoatLlamaFakeForCausalLM
 
 from toolbench.tool_conversation import SeparatorStyle
 from toolbench.model.model_adapter import get_conversation_template
@@ -310,7 +310,9 @@ def train():
     )
 
     if use_fake:
-        config.model_type = "fp8_llama_fake"
+        # Rebuild as CoatLlamaFakeConfig so checkpoints carry the correct model_type
+        config = CoatLlamaFakeConfig.from_dict(config.to_dict())
+        config.model_type = CoatLlamaFakeConfig.model_type
         config.architectures = ["CoatLlamaFakeForCausalLM"]
 
         coat_fp8_args = getattr(config, "coat_fp8_args", {}) or {}

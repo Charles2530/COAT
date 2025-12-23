@@ -58,7 +58,7 @@ from .torch_util import (
 )
 from .util import upload
 
-quant_parent_path = "/mtc_afs/charles"  # <--- 注意：这里要改成你实际 quant 所在的上一级目录
+quant_parent_path = "/mtc_afs/charles/COAT"  # <--- 注意：这里要改成你实际 quant 所在的上一级目录
 
 if quant_parent_path not in sys.path:
     sys.path.append(quant_parent_path)

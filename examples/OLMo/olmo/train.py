@@ -57,6 +57,7 @@ from .torch_util import (
     synchronize_value,
 )
 from .util import upload
+from quant.operators import update_global_step
 
 __all__ = ["SpeedMonitor", "LRMonitor", "Trainer"]
 
@@ -1225,6 +1226,12 @@ class Trainer:
                     assert seq_len == self.cfg.model.max_sequence_length
                     assert batch_size == self.cfg.device_train_batch_size
                     global_batch_size = batch_size * get_world_size()  # assumes batch size equal across ranks
+
+                    # new ==========================
+                    current_step = self.global_step
+                    update_global_step(current_step + 1)
+                    # ==============================
+
                     self.global_step += 1
                     self.global_train_examples_seen_this_epoch += global_batch_size
                     self.global_train_tokens_seen += global_batch_size * seq_len

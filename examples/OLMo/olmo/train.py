@@ -63,7 +63,7 @@ quant_parent_path = "/mtc_afs/charles/COAT"  # <--- 注意：这里要改成你�
 
 if quant_parent_path not in sys.path:
     sys.path.append(quant_parent_path)
-from quant.operators import update_global_step
+from fake_quant_ops.quant.operators import update_global_step
 
 __all__ = ["SpeedMonitor", "LRMonitor", "Trainer"]
 

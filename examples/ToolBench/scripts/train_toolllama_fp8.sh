@@ -20,7 +20,8 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train_fp8.py \
     --gradient_accumulation_steps 4 \
     --evaluation_strategy "epoch" \
     --prediction_loss_only \
-    --save_strategy "epoch" \
+    --save_strategy "steps" \
+    --save_steps 500 \
     --save_total_limit 8 \
     --learning_rate 5e-5 \
     --weight_decay 0. \

@@ -1,16 +1,15 @@
 export PYTHONPATH=./
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export MODEL_NAME="/mnt/lm_data_afs/wangzining/charles/models/Llama-2-7b-hf"
-export CONVERTED_MODEL_PATH="converted_models/llama2-7b-hf"
-export SAVE_DIR="toolllama/fp8"
-export WANDB_RUN_NAME="${WANDB_RUN_NAME:-toolllama-fp8-$(date +%Y%m%d-%H%M%S)}"
+export SAVE_DIR="toolllama/fake_mxfp4"
+export WANDB_RUN_NAME="${WANDB_RUN_NAME:-toolllama-fake-mxfp4-$(date +%Y%m%d-%H%M%S)}"
 
-# We double the batch size here
-torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train_fp8.py \
-    --model_name_or_path $MODEL_NAME  \
-    --fp8_model_name_or_path $CONVERTED_MODEL_PATH  \
-    --data_path  data/toolllama_G123_dfs_train.json \
-    --eval_data_path  data/toolllama_G123_dfs_eval.json \
+# MXFP4 fake-quantized training
+torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train.py \
+    --model_name_or_path $MODEL_NAME \
+    --use_mxfp4_fake True \
+    --data_path data/toolllama_G123_dfs_train.json \
+    --eval_data_path data/toolllama_G123_dfs_eval.json \
     --conv_template tool-llama-single-round \
     --bf16 True \
     --output_dir $SAVE_DIR \
@@ -28,29 +27,14 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train_fp8.py \
     --lr_scheduler_type "cosine" \
     --logging_steps 1 \
     --fsdp "full_shard auto_wrap" \
-    --fsdp_transformer_layer_cls_to_wrap 'CoatLlamaDecoderLayer' \
+    --fsdp_transformer_layer_cls_to_wrap 'LlamaDecoderLayerFake' \
     --tf32 True \
     --source_model_max_length 4096 \
     --model_max_length 4096 \
     --lazy_preprocess True \
+    --optim adamw_torch \
     --run_name $WANDB_RUN_NAME \
     --report_to wandb
-
-    # Below are the default value for FP8 training
-    # --quantize_model true \
-    # --fabit E4M3 \
-    # --fwbit E4M3 \
-    # --fobit E4M3 \
-    # --bwbit E5M2 \
-    # --babit E5M2 \
-    # --bobit E5M2 \
-    # --group_size 16 \
-    # --first_order_expansion true \
-    # --second_order_expansion true \
-    # --first_order_bit E4M3 \
-    # --second_order_bit E4M3 \
-    # --qgroup_size 128 \
-    # --expand_min 16
 
 # Training will automatically run inference and evaluation on math reasoning datasets after training completes
 # Results will be logged to the same wandb run

@@ -25,6 +25,8 @@ import transformers
 from transformers import Trainer
 from transformers.trainer_pt_utils import LabelSmoother
 
+from coat.models.coat_llama_fake import LlamaForCausalLMFake
+
 from toolbench.tool_conversation import SeparatorStyle
 from toolbench.model.model_adapter import get_conversation_template
 from toolbench.train.llama_condense_monkey_patch import replace_llama_with_condense
@@ -46,6 +48,10 @@ torch.set_printoptions(profile="full")
 @dataclass
 class ModelArguments:
     model_name_or_path: Optional[str] = field(default="facebook/opt-125m")
+    use_mxfp4_fake: bool = field(
+        default=False,
+        metadata={"help": "Use MXFP4 fake-quantized Llama model from coat."},
+    )
 
 
 @dataclass
@@ -283,11 +289,23 @@ def train():
     world_size = int(os.environ.get("WORLD_SIZE", 1))
     ddp = world_size != 1
     device_map = {"": int(os.environ.get("LOCAL_RANK") or 0)} if ddp else None
-    model = transformers.AutoModelForCausalLM.from_pretrained(
-        model_args.model_name_or_path,
-        cache_dir=training_args.cache_dir,
-        device_map=device_map
-    )
+    if model_args.use_mxfp4_fake:
+        config = transformers.AutoConfig.from_pretrained(
+            model_args.model_name_or_path,
+            cache_dir=training_args.cache_dir,
+        )
+        model = LlamaForCausalLMFake.from_pretrained(
+            model_args.model_name_or_path,
+            cache_dir=training_args.cache_dir,
+            device_map=device_map,
+            config=config,
+        )
+    else:
+        model = transformers.AutoModelForCausalLM.from_pretrained(
+            model_args.model_name_or_path,
+            cache_dir=training_args.cache_dir,
+            device_map=device_map
+        )
     model.config.use_cache = False
     trainer = Trainer(
         model=model, tokenizer=tokenizer, args=training_args, **data_module

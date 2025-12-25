@@ -119,12 +119,13 @@ class LlamaMLPFake(nn.Module):
 
 
 class LlamaDecoderLayerFake(nn.Module):
-    """Decoder layer with fake-quantized MLP and unmodified attention."""
+    """Decoder layer with fake-quantized MLP; attention left unquantized."""
 
     def __init__(self, config: LlamaConfig, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
 
+        # Keep attention identical to HF implementation (no fake quantization on attn path).
         self.self_attn = LlamaAttention(config=config, layer_idx=layer_idx)
         self.mlp = LlamaMLPFake(config)
         self.input_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)

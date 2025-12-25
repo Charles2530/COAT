@@ -58,6 +58,34 @@ class ModelArguments:
         default=False,
         metadata={"help": "Use MXFP4 fake-quantized Llama model from coat."},
     )
+    fabit: str = field(
+        default="mxfp4_e2m1",
+        metadata={"help": "Forward activation/weight fake quantization format (e.g., mxfp4_e2m1 or bf16)."},
+    )
+    babit: str = field(
+        default="mxfp4_e2m1",
+        metadata={"help": "Backward fake quantization format for activations/weights."},
+    )
+    backward_quantize: bool = field(
+        default=False,
+        metadata={"help": "Enable backward fake quantization (STE if False)."},
+    )
+    minus_exp: Optional[int] = field(
+        default=None,
+        metadata={"help": "Optional exponent offset for MXFP4 fake quantization."},
+    )
+    attn_quantize: bool = field(
+        default=False,
+        metadata={"help": "Apply additional fake quantization to attention QKV projections."},
+    )
+    attn_quantize_forward_bit: Optional[str] = field(
+        default=None,
+        metadata={"help": "Forward format for attention QKV fake quantization (defaults to fabit)."},
+    )
+    attn_quantize_backward_bit: Optional[str] = field(
+        default=None,
+        metadata={"help": "Backward format for attention QKV fake quantization (defaults to babit)."},
+    )
 
 
 @dataclass
@@ -300,6 +328,14 @@ def train():
             model_args.model_name_or_path,
             cache_dir=training_args.cache_dir,
         )
+        # Thread fake-quantization settings into the config so LlamaForCausalLMFake picks them up.
+        config.fabit = model_args.fabit
+        config.babit = model_args.babit
+        config.backward_quantize = model_args.backward_quantize
+        config.minus_exp = model_args.minus_exp
+        config.attn_quantize = model_args.attn_quantize
+        config.attn_quantize_forward_bit = model_args.attn_quantize_forward_bit or model_args.fabit
+        config.attn_quantize_backward_bit = model_args.attn_quantize_backward_bit or model_args.babit
         model = LlamaForCausalLMFake.from_pretrained(
             model_args.model_name_or_path,
             cache_dir=training_args.cache_dir,

@@ -8,8 +8,8 @@ export WANDB_RUN_NAME="${WANDB_RUN_NAME:-toolllama-fake-mxfp4-$(date +%Y%m%d-%H%
 torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train.py \
     --model_name_or_path $MODEL_NAME \
     --use_mxfp4_fake True \
-    --data_path data/toolllama_G123_dfs_train.json \
-    --eval_data_path data/toolllama_G123_dfs_eval.json \
+    --data_path MathInstruct/MathInstruct_toolbench_format.json \
+    --eval_data_path MathInstruct/MathInstruct_toolbench_format.json \
     --conv_template tool-llama-single-round \
     --bf16 True \
     --output_dir $SAVE_DIR \

@@ -52,7 +52,7 @@ from transformers.models.llama.modeling_llama import (
     LlamaModel,
     LlamaForCausalLM,
 )
-from transformers.utils import TransformersKwargs, can_return_tuple
+
 
 
 class FakeQuantLinear(nn.Module):

@@ -25,6 +25,12 @@ import transformers
 from transformers import Trainer
 from transformers.trainer_pt_utils import LabelSmoother
 
+import sys
+# Add project root to sys.path to allow importing coat
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.."))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 from coat.models.coat_llama_fake import LlamaForCausalLMFake
 
 from toolbench.tool_conversation import SeparatorStyle

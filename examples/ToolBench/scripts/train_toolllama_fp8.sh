@@ -33,6 +33,10 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train_fp8.py \
     --source_model_max_length 4096 \
     --model_max_length 4096 \
     --lazy_preprocess True \
+    --first_order_expansion false \
+    --second_order_expansion false \
+    --first_order_bit BF16 \
+    --second_order_bit BF16 \
     --run_name $WANDB_RUN_NAME \
     --report_to wandb
 

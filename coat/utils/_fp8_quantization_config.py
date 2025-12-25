@@ -20,10 +20,10 @@ class QuantizationConfig:
     weight_memory_efficient: bool = True
 
     # Quantize Optimizer States
-    first_order_expansion: str = "true"
-    second_order_expansion: str = "true"
-    first_order_bit: str = "E4M3"
-    second_order_bit: str = "E4M3"
+    first_order_expansion: str = "false"
+    second_order_expansion: str = "false"
+    first_order_bit: str = "BF16"
+    second_order_bit: str = "BF16"
     qgroup_size: int = 128
     expand_min: int = 16
 
@@ -45,10 +45,10 @@ class QuantizationConfig:
         group_size: int = 16,
         pad_to_multiple_of: int = 0,
         weight_memory_efficient: bool = True,
-        first_order_expansion: str = "true",
-        second_order_expansion: str = "true",
-        first_order_bit: str = "E4M3",
-        second_order_bit: str = "E4M3",
+        first_order_expansion: str = "false",
+        second_order_expansion: str = "false",
+        first_order_bit: str = "BF16",
+        second_order_bit: str = "BF16",
         qgroup_size: int = 128,
         expand_min: int = 16,
         row_blocksize: int = -1,

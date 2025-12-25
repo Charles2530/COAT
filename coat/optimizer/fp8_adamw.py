@@ -30,7 +30,7 @@ from ..utils._fp8_quantization_config import QuantizationConfig
 
 StateDict: TypeAlias = Dict[str, Any]
 
-convert_str_to_fp8 = {"E4M3": torch.float8_e4m3fn, "E5M2": torch.float8_e5m2}
+convert_str_to_fp8 = {"E4M3": torch.float8_e4m3fn, "E5M2": torch.float8_e5m2, "BF16": torch.bfloat16}
 
 
 class CoatAdamW(Optimizer):

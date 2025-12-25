@@ -348,6 +348,23 @@ def train():
             cache_dir=training_args.cache_dir,
             device_map=device_map
         )
+    # Debug: print key fake-quantization config to verify propagation (rank0 only).
+    rank0_print(
+        "[MXFP4 fake debug] config.fabit=",
+        getattr(model.config, "fabit", None),
+        "babit=",
+        getattr(model.config, "babit", None),
+        "backward_quantize=",
+        getattr(model.config, "backward_quantize", None),
+        "minus_exp=",
+        getattr(model.config, "minus_exp", None),
+        "attn_quantize=",
+        getattr(model.config, "attn_quantize", None),
+        "attn_q_forward=",
+        getattr(model.config, "attn_quantize_forward_bit", None),
+        "attn_q_backward=",
+        getattr(model.config, "attn_quantize_backward_bit", None),
+    )
     model.config.use_cache = False
     trainer = Trainer(
         model=model, tokenizer=tokenizer, args=training_args, **data_module

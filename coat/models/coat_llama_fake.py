@@ -74,6 +74,12 @@ class FakeQuantLinear(nn.Linear):
         self.minus_exp = getattr(config, "minus_exp", None)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # Fast path: if explicitly set to BF16, skip fake quant entirely.
+        ff = str(self.forward_format).lower()
+        bf = str(self.backward_format).lower()
+        if ff == "bf16" and bf == "bf16":
+            return F.linear(x.to(torch.bfloat16), self.weight.to(torch.bfloat16), self.bias)
+
         x_q = quant_dequant_tensor_with_backward(
             x,
             forward_format=self.forward_format,

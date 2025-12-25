@@ -55,7 +55,7 @@ from transformers.models.llama.modeling_llama import (
 
 
 
-class FakeQuantLinear(nn.Module):
+class FakeQuantLinear(nn.Linear):
     """Linear layer that fake-quantizes inputs and weights before matmul."""
 
     def __init__(
@@ -65,8 +65,7 @@ class FakeQuantLinear(nn.Module):
         config: LlamaConfig,
         bias: bool = True,
     ) -> None:
-        super().__init__()
-        self.linear = nn.Linear(in_features, out_features, bias=bias)
+        super().__init__(in_features, out_features, bias=bias)
 
         # Quantization formats from config with MXFP4 defaults.
         self.forward_format = getattr(config, "fabit", "mxfp4_e2m1")
@@ -84,14 +83,14 @@ class FakeQuantLinear(nn.Module):
         ).to(torch.bfloat16)
 
         w_q = quant_dequant_tensor_with_backward(
-            self.linear.weight,
+            self.weight,
             forward_format=self.forward_format,
             minus_exp=self.minus_exp,
             backward_quantize=self.backward_quantize,
             backward_format=self.backward_format,
         ).to(torch.bfloat16)
 
-        return F.linear(x_q, w_q, self.linear.bias)
+        return F.linear(x_q, w_q, self.bias)
 
 
 class LlamaMLPFake(nn.Module):

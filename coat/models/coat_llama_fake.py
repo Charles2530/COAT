@@ -68,8 +68,8 @@ class FakeQuantLinear(nn.Linear):
         super().__init__(in_features, out_features, bias=bias)
 
         # Quantization formats from config with MXFP4 defaults.
-        self.forward_format = getattr(config, "fabit", "bf16")
-        self.backward_format = getattr(config, "babit", "bf16")
+        self.forward_format = getattr(config, "fabit", "mxfp4_e2m1")
+        self.backward_format = getattr(config, "babit", "mxfp4_e2m1")
         self.backward_quantize = bool(getattr(config, "backward_quantize", False))
         self.minus_exp = getattr(config, "minus_exp", None)
 

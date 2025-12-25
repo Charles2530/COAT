@@ -28,6 +28,7 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train.py \
     --logging_steps 1 \
     --fsdp "full_shard auto_wrap" \
     --fsdp_transformer_layer_cls_to_wrap 'LlamaDecoderLayerFake' \
+    --gradient_checkpointing True \
     --tf32 True \
     --source_model_max_length 4096 \
     --model_max_length 4096 \

@@ -141,11 +141,13 @@ class LlamaDecoderLayerFake(nn.Module):
         cache_position: Optional[torch.LongTensor] = None,
         position_embeddings: Optional[tuple[torch.Tensor, torch.Tensor]] = None,
         **kwargs,
-    ) -> torch.Tensor:
+    ) -> Any:
+        output_attentions = kwargs.get("output_attentions", False)
+
         residual = hidden_states
         hidden_states = self.input_layernorm(hidden_states)
 
-        hidden_states, _ = self.self_attn(
+        hidden_states, self_attn_weights, present_key_value = self.self_attn(
             hidden_states=hidden_states,
             attention_mask=attention_mask,
             position_ids=position_ids,
@@ -161,7 +163,14 @@ class LlamaDecoderLayerFake(nn.Module):
         hidden_states = self.post_attention_layernorm(hidden_states)
         hidden_states = self.mlp(hidden_states)
         hidden_states = residual + hidden_states
-        return hidden_states
+
+        outputs = (hidden_states,)
+        if output_attentions:
+            outputs += (self_attn_weights,)
+        if use_cache:
+            outputs += (present_key_value,)
+
+        return outputs
 
 
 class LlamaModelFake(LlamaModel):

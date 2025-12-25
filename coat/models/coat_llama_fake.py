@@ -30,7 +30,7 @@ import torch.nn.functional as F
 import sys
 import os
 
-from typing import Optional, Union, Unpack
+from typing import Optional, Union, Any
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 if project_root not in sys.path:
@@ -269,7 +269,7 @@ class LlamaForCausalLMFake(LlamaPreTrainedModel, GenerationMixin):
         use_cache: Optional[bool] = None,
         cache_position: Optional[torch.LongTensor] = None,
         logits_to_keep: Union[int, torch.Tensor] = 0,
-        **kwargs: Unpack[TransformersKwargs],
+        **kwargs: Any,
     ) -> CausalLMOutputWithPast:
         outputs: BaseModelOutputWithPast = self.model(
             input_ids=input_ids,

@@ -74,6 +74,10 @@ class ModelArguments:
         default=None,
         metadata={"help": "Optional exponent offset for MXFP4 fake quantization."},
     )
+    auto_reverse: bool = field(
+        default=False,
+        metadata={"help": "Enable auto reverse exponent heuristic for MX formats if supported."},
+    )
     attn_quantize: bool = field(
         default=False,
         metadata={"help": "Apply additional fake quantization to attention QKV projections."},
@@ -333,6 +337,7 @@ def train():
         config.babit = model_args.babit
         config.backward_quantize = model_args.backward_quantize
         config.minus_exp = model_args.minus_exp
+        config.auto_reverse = model_args.auto_reverse
         config.attn_quantize = model_args.attn_quantize
         config.attn_quantize_forward_bit = model_args.attn_quantize_forward_bit or model_args.fabit
         config.attn_quantize_backward_bit = model_args.attn_quantize_backward_bit or model_args.babit
@@ -358,6 +363,8 @@ def train():
         getattr(model.config, "backward_quantize", None),
         "minus_exp=",
         getattr(model.config, "minus_exp", None),
+        "auto_reverse=",
+        getattr(model.config, "auto_reverse", None),
         "attn_quantize=",
         getattr(model.config, "attn_quantize", None),
         "attn_q_forward=",

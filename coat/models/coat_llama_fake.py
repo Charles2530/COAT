@@ -72,6 +72,7 @@ class FakeQuantLinear(nn.Linear):
         self.backward_format = getattr(config, "babit", "mxfp4_e2m1")
         self.backward_quantize = bool(getattr(config, "backward_quantize", False))
         self.minus_exp = getattr(config, "minus_exp", None)
+        self.auto_reverse = getattr(config, "auto_reverse", False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Fast path: if explicitly set to BF16, skip fake quant entirely.

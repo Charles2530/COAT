@@ -2,8 +2,8 @@ export PYTHONPATH=./
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export MODEL_NAME="/mnt/lm_data_afs/wangzining/charles/models/Llama-2-7b-hf"
 # 注意改路径
-export SAVE_DIR="toolllama/fake_mxfp4"
-export WANDB_RUN_NAME="${WANDB_RUN_NAME:-toolllama-fake-mxfp4-$(date +%Y%m%d-%H%M%S)}"
+export SAVE_DIR="toolllama/fake_mxfp4_r"
+export WANDB_RUN_NAME="${WANDB_RUN_NAME:-toolllama-fake-mxfp4-AutoReverse-$(date +%Y%m%d-%H%M%S)}"
 
 # MXFP4 fake-quantized training
 torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train.py \
@@ -13,13 +13,13 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train.py \
     --babit mxfp4_e2m1 \
     --backward_quantize True \
     --minus_exp None \
-    --auto_reverse false \
+    --auto_reverse True \
     --data_path MathInstruct/MathInstruct_toolbench_format.json \
     --eval_data_path MathInstruct/MathInstruct_toolbench_format.json \
     --conv_template tool-llama-single-round \
     --bf16 True \
     --output_dir $SAVE_DIR \
-    --num_train_epochs 3 \
+    --num_train_epochs 1 \
     --per_device_train_batch_size 2 \
     --per_device_eval_batch_size 2 \
     --gradient_accumulation_steps 4 \

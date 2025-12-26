@@ -13,7 +13,7 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train.py \
     --babit mxfp4_e2m1 \
     --backward_quantize True \
     --minus_exp 1 \
-    --auto_reverse false \
+    --auto_reverse False \
     --data_path MathInstruct/MathInstruct_toolbench_format.json \
     --eval_data_path MathInstruct/MathInstruct_toolbench_format.json \
     --conv_template tool-llama-single-round \

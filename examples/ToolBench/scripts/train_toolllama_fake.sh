@@ -13,13 +13,13 @@ torchrun --nproc_per_node=8 --master_port=20001 toolbench/train/train.py \
     --babit mxfp4_e2m1 \
     --backward_quantize True \
     --minus_exp None \
-    --auto_reverse false \
+    --auto_reverse False \
     --data_path MathInstruct/MathInstruct_toolbench_format.json \
     --eval_data_path MathInstruct/MathInstruct_toolbench_format.json \
     --conv_template tool-llama-single-round \
     --bf16 True \
     --output_dir $SAVE_DIR \
-    --num_train_epochs 3 \
+    --num_train_epochs 1 \
     --per_device_train_batch_size 2 \
     --per_device_eval_batch_size 2 \
     --gradient_accumulation_steps 4 \

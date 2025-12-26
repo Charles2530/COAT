@@ -70,9 +70,9 @@ class ModelArguments:
         default=False,
         metadata={"help": "Enable backward fake quantization (STE if False)."},
     )
-    minus_exp: Optional[int] = field(
+    minus_exp: Optional[str] = field(
         default=None,
-        metadata={"help": "Optional exponent offset for MXFP4 fake quantization."},
+        metadata={"help": "Exponent offset for MXFP4 fake quantization. Accepts int or 'None' for no offset."},
     )
     auto_reverse: bool = field(
         default=False,
@@ -302,6 +302,18 @@ def make_supervised_data_module(
     return dict(train_dataset=train_dataset, eval_dataset=eval_dataset)
 
 
+def _parse_minus_exp(value):
+    """Normalize minus_exp from CLI: accept int-like strings or 'None' for no offset."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        stripped = value.strip()
+        if stripped.lower() in {"none", ""}:
+            return None
+        return int(stripped)
+    return int(value)
+
+
 def train():
     global local_rank
 
@@ -309,6 +321,8 @@ def train():
         (ModelArguments, DataArguments, TrainingArguments)
     )
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+    parsed_minus_exp = _parse_minus_exp(model_args.minus_exp)
+    model_args.minus_exp = parsed_minus_exp
     if training_args.source_model_max_length < training_args.model_max_length:
         condense_ratio = int(training_args.model_max_length/training_args.source_model_max_length)
         # ratio = N means the sequence length is expanded by N, remember to change the model_max_length to 8192 (2048 * ratio) for ratio = 4

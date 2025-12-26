@@ -2,7 +2,7 @@ export PYTHONPATH=./
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export MODEL_NAME="/mnt/lm_data_afs/wangzining/charles/models/Llama-2-7b-hf"
 # 注意改路径
-export SAVE_DIR="toolllama"
+export SAVE_DIR="toolllama/fake_mxfp4"
 export WANDB_RUN_NAME="${WANDB_RUN_NAME:-toolllama-fake-bf16-$(date +%Y%m%d-%H%M%S)}"
 
 # BF16 fake-quantized training

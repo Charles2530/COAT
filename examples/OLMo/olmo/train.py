@@ -5,6 +5,7 @@ import functools
 import gc
 import logging
 import math
+import sys
 import os
 import random
 import shutil
@@ -57,6 +58,12 @@ from .torch_util import (
     synchronize_value,
 )
 from .util import upload
+
+quant_parent_path = "/mtc_afs/charles/COAT"  # <--- 注意：这里要改成你实际 quant 所在的上一级目录
+
+if quant_parent_path not in sys.path:
+    sys.path.append(quant_parent_path)
+from fake_quant_ops.quant.operators import update_global_step
 
 __all__ = ["SpeedMonitor", "LRMonitor", "Trainer"]
 
@@ -1225,6 +1232,12 @@ class Trainer:
                     assert seq_len == self.cfg.model.max_sequence_length
                     assert batch_size == self.cfg.device_train_batch_size
                     global_batch_size = batch_size * get_world_size()  # assumes batch size equal across ranks
+
+                    # new ==========================
+                    current_step = self.global_step
+                    update_global_step(current_step + 1)
+                    # ==============================
+
                     self.global_step += 1
                     self.global_train_examples_seen_this_epoch += global_batch_size
                     self.global_train_tokens_seen += global_batch_size * seq_len

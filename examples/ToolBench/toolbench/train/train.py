@@ -25,6 +25,10 @@ import transformers
 from transformers import Trainer
 from transformers.trainer_pt_utils import LabelSmoother
 
+# Register Coat LLaMA fake quantization implementation so AutoConfig/AutoModel can resolve it
+import coat.models.coat_llama_fake  # noqa: F401
+from coat.models.coat_llama_fake import CoatLlamaFakeConfig, CoatLlamaFakeForCausalLM
+
 from toolbench.tool_conversation import SeparatorStyle
 from toolbench.model.model_adapter import get_conversation_template
 from toolbench.train.llama_condense_monkey_patch import replace_llama_with_condense
@@ -46,6 +50,18 @@ torch.set_printoptions(profile="full")
 @dataclass
 class ModelArguments:
     model_name_or_path: Optional[str] = field(default="facebook/opt-125m")
+    fabit: Optional[str] = field(
+        default=None, metadata={"help": "Fake-quant forward bit type (e.g., MXFP4)."}
+    )
+    babit: Optional[str] = field(
+        default=None, metadata={"help": "Fake-quant backward bit type (e.g., E5M2)."}
+    )
+    attn_quantize: Optional[bool] = field(
+        default=None, metadata={"help": "Enable attention quantization when using fake quant."}
+    )
+    minus_exp: Optional[int] = field(
+        default=None, metadata={"help": "Minus exponent offset for fake quantization."}
+    )
 
 
 @dataclass
@@ -66,6 +82,11 @@ class DataArguments:
 class TrainingArguments(transformers.TrainingArguments):
     cache_dir: Optional[str] = field(default=None)
     optim: str = field(default="adamw_torch")
+    # Allow optimizer-state quant args to be parsed (passed through CLI but unused here)
+    first_order_expansion: str = field(default="false")
+    second_order_expansion: str = field(default="false")
+    first_order_bit: str = field(default="BF16")
+    second_order_bit: str = field(default="BF16")
     source_model_max_length: int = field(
         default=2048,
         metadata={
@@ -270,6 +291,41 @@ def train():
         # ratio = N means the sequence length is expanded by N, remember to change the model_max_length to 8192 (2048 * ratio) for ratio = 4
         replace_llama_with_condense(ratio=condense_ratio)
     local_rank = training_args.local_rank
+
+    # Load config; only switch to fake-quant path when fake args are provided
+    config = transformers.AutoConfig.from_pretrained(
+        model_args.model_name_or_path,
+        cache_dir=training_args.cache_dir,
+        trust_remote_code=True,
+    )
+
+    use_fake = any(
+        x is not None
+        for x in (
+            model_args.fabit,
+            model_args.babit,
+            model_args.attn_quantize,
+            model_args.minus_exp,
+        )
+    )
+
+    if use_fake:
+        # Rebuild as CoatLlamaFakeConfig so checkpoints carry the correct model_type
+        config = CoatLlamaFakeConfig.from_dict(config.to_dict())
+        config.model_type = CoatLlamaFakeConfig.model_type
+        config.architectures = ["CoatLlamaFakeForCausalLM"]
+
+        coat_fp8_args = getattr(config, "coat_fp8_args", {}) or {}
+        if model_args.fabit is not None:
+            coat_fp8_args["fabit"] = model_args.fabit
+        if model_args.babit is not None:
+            coat_fp8_args["babit"] = model_args.babit
+        if model_args.attn_quantize is not None:
+            coat_fp8_args["attn_quantize"] = model_args.attn_quantize
+        if model_args.minus_exp is not None:
+            coat_fp8_args["minus_exp"] = model_args.minus_exp
+        config.coat_fp8_args = coat_fp8_args
+
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
@@ -283,10 +339,13 @@ def train():
     world_size = int(os.environ.get("WORLD_SIZE", 1))
     ddp = world_size != 1
     device_map = {"": int(os.environ.get("LOCAL_RANK") or 0)} if ddp else None
-    model = transformers.AutoModelForCausalLM.from_pretrained(
+    model_cls = CoatLlamaFakeForCausalLM if use_fake else transformers.AutoModelForCausalLM
+    model = model_cls.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
-        device_map=device_map
+        device_map=device_map,
+        config=config,
+        trust_remote_code=True,
     )
     model.config.use_cache = False
     trainer = Trainer(
@@ -366,11 +425,18 @@ def train():
                         self.max_sequence_length = max_sequence_length
                         self.use_gpu = (device == "cuda")
                 
-                # Unwrap model if it's wrapped by DDP/FSDP
+                # Unwrap only DDP; keep FSDP wrapper so parameters stay unflattened
                 unwrapped_model = trainer.model
-                if hasattr(unwrapped_model, 'module'):  # DDP wrapper
+                is_fsdp = False
+                try:
+                    from torch.distributed.fsdp import FullyShardedDataParallel as FSDP  # type: ignore
+                    is_fsdp = isinstance(unwrapped_model, FSDP)
+                except Exception:
+                    pass
+
+                if hasattr(unwrapped_model, 'module') and not is_fsdp:
                     unwrapped_model = unwrapped_model.module
-                
+
                 # Set model to eval mode
                 unwrapped_model.eval()
                 

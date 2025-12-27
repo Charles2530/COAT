@@ -7,6 +7,7 @@ from peft import PeftModel
 import torch
 from typing import Optional
 import torch
+import coat.models.coat_llama_fake  # noqa: F401  # register fp8_llama_fake
 from transformers import (
     AutoTokenizer,
     LlamaForCausalLM,
@@ -36,7 +37,8 @@ class ToolLLaMALoRA:
             base_name_or_path,
             load_in_8bit=load_8bit,
             torch_dtype=torch.float16,
-            device_map="auto"
+            device_map="auto",
+            trust_remote_code=True,
         )
         self.model = PeftModel.from_pretrained(
             model,

@@ -6,6 +6,7 @@ from typing import Optional, List
 import torch
 from typing import Optional
 import torch
+import coat.models.coat_llama_fake  # noqa: F401  # registers fp8_llama_fake config/model
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
@@ -30,7 +31,7 @@ class ToolLLaMA:
         self.max_sequence_length = max_sequence_length
         self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False, model_max_length=self.max_sequence_length)
         self.model = AutoModelForCausalLM.from_pretrained(
-            model_name_or_path, low_cpu_mem_usage=True
+            model_name_or_path, low_cpu_mem_usage=True, trust_remote_code=True
         )
         if self.tokenizer.pad_token_id == None:
             self.tokenizer.add_special_tokens({"bos_token": "<s>", "eos_token": "</s>", "pad_token": "<pad>"})

@@ -36,6 +36,18 @@ model:
   init_device: meta
   init_fn: mitchell
 
+quantize_model:
+  use_quantize_model: coat_fake
+  backward_quantize: true
+  fabit: bf16
+  babit: bf16
+  minus_exp: "auto"
+  weight_memory_efficient: true
+  attn_quantize: false
+  attn_quantize_forward_bit: bf16
+  attn_quantize_backward_bit: bf16
+  group_size: 16
+
 compile: null  # causes instability on AMD GPUs
 
 optimizer:
@@ -59,8 +71,8 @@ tokenizer:
 save_folder: result/checkpoints/${run_name}
 save_overwrite: true
 # Sharded checkpoints (best for restarts)
-save_interval: 1000
-save_num_checkpoints_to_keep: 9
+save_interval: 100
+save_num_checkpoints_to_keep: 3
 # Unsharded checkpoints (for final storage)
 save_interval_unsharded: 10000
 save_num_unsharded_checkpoints_to_keep: -1

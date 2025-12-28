@@ -72,7 +72,7 @@ class ModelArguments:
     )
     minus_exp: Optional[str] = field(
         default=None,
-        metadata={"help": "Exponent offset for MXFP4 fake quantization. Accepts int, 'None', or 'auto-reverse'."},
+        metadata={"help": "Exponent offset for MXFP4 fake quantization. Accepts int, 'None', 'auto', or 'auto-reverse'."},
     )
     auto_reverse: bool = field(
         default=False,
@@ -303,13 +303,15 @@ def make_supervised_data_module(
 
 
 def _parse_minus_exp(value):
-    """Normalize minus_exp from CLI: accept ints, None, or 'auto-reverse'."""
+    """Normalize minus_exp from CLI: accept ints, None, 'auto', or 'auto-reverse'."""
     if value is None:
         return None
     if isinstance(value, str):
         stripped = value.strip().lower()
         if stripped in {"none", ""}:
             return None
+        if stripped == "auto":
+            return "auto"
         if stripped in {"auto-reverse", "auto_reverse"}:
             return "auto-reverse"
         return int(stripped)

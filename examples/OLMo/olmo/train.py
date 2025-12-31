@@ -491,8 +491,34 @@ class Trainer:
                 # Same as above, caught when another (file-system) local rank 0 has already made the 'latest' symlink.
                 # This can happen when nodes are saving to a common NFS drive but otherwise have distinct
                 # file-systems.
-                if latest_path.resolve().name != checkpoint_dir.name:
-                    raise
+                # Also handle race conditions where unlink() didn't take effect immediately
+                if latest_path.exists() and latest_path.is_symlink():
+                    try:
+                        resolved_name = latest_path.resolve().name
+                        if resolved_name != checkpoint_dir.name:
+                            # Symlink points to wrong checkpoint, try to fix it
+                            latest_path.unlink(missing_ok=False)
+                            latest_path.symlink_to(checkpoint_dir.name, target_is_directory=True)
+                        # If resolved_name == checkpoint_dir.name, the symlink is already correct, ignore the error
+                    except (FileExistsError, OSError):
+                        # If it still fails after checking, verify the symlink is correct
+                        if latest_path.exists() and latest_path.is_symlink():
+                            if latest_path.resolve().name != checkpoint_dir.name:
+                                raise
+                        else:
+                            raise
+                else:
+                    # File exists but is not a symlink - try again
+                    try:
+                        latest_path.unlink(missing_ok=True)
+                        latest_path.symlink_to(checkpoint_dir.name, target_is_directory=True)
+                    except FileExistsError:
+                        # If still failing, check if symlink now exists and is correct
+                        if latest_path.exists() and latest_path.is_symlink():
+                            if latest_path.resolve().name != checkpoint_dir.name:
+                                raise
+                        else:
+                            raise
 
         # Remove old checkpoints.
         # For DDP, checkpoint_type being passed to remove_checkpoint is always `unsharded`.

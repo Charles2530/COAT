@@ -30,6 +30,19 @@ from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
 
+# 储存tensor路径设置
+current_dir = os.path.dirname(os.path.abspath(__file__))
+coat_root = os.path.abspath(os.path.join(current_dir, "../../../")) 
+if coat_root not in sys.path:
+    sys.path.append(coat_root)
+try:
+    from fake_quant_ops.quant.operators import DebugSaverConfig
+    print("[DebugSaver] Successfully imported config!")
+except ImportError as e:
+    print(f"[DebugSaver] First import attempt failed: {e}")
+    # 如果上面那个不行，尝试这一种（取决于你的 PYTHONPATH 怎么设的）
+    from quant.operators import DebugSaverConfig
+
 from .aliases import PathOrStr
 from .checkpoint import Checkpointer, FullCheckpointer, build_sharded_checkpointer
 from .config import (
@@ -240,6 +253,11 @@ class Trainer:
                 self.loss_fn = fused_loss_fn
             else:
                 raise NameError("`fused_loss_fn` is not defined. Please ensure that `flash_attn` is installed.")
+        self._sync_debug_saver_iter()
+
+    def _sync_debug_saver_iter(self) -> None:
+        if DebugSaverConfig is not None:
+            DebugSaverConfig.CURRENT_ITER = self.global_step
 
     @property
     def dataset(self) -> IterableDataset:
@@ -358,6 +376,7 @@ class Trainer:
         # Dataset / dataloader position.
         checkpoint_epoch = state_dict.get("epoch") or 0
         self.global_step = state_dict["global_step"]
+        self._sync_debug_saver_iter()
         self.global_train_examples_seen_this_epoch = state_dict.get(
             "global_train_examples_seen_this_epoch",
             state_dict.get(  # for backwards compatibility
@@ -1254,6 +1273,7 @@ class Trainer:
                     global_batch_size = batch_size * get_world_size()  # assumes batch size equal across ranks
 
                     self.global_step += 1
+                    self._sync_debug_saver_iter()
                     self.global_train_examples_seen_this_epoch += global_batch_size
                     self.global_train_tokens_seen += global_batch_size * seq_len
                     speed_monitor.batch_start(

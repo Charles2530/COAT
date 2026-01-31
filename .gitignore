@@ -17,7 +17,7 @@ hostfile
 *_dev.sh
 *.ipynb
 
-examples/ToolBench/datasets                                                                    │
+examples/ToolBench/datasets/                                                                │
 examples/ToolBench/toolllama	
 
 # Python
@@ -57,3 +57,14 @@ playground
 */visualization/*
 .env
 server.log
+
+
+examples/OLMo/olmo_data/*
+examples/ToolBench/toolllama/
+examples/ToolBench/MathInstruct/
+examples/ToolBench/lm-evaluation-harness
+examples/backup/*
+fake_quant_ops
+examples/ToolBench/datasets/*
+examples/ToolBench/predictions/*
+examples/OLMo/data-indices/

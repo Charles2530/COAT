@@ -483,15 +483,49 @@ class Trainer:
         if link_latest:
             # Link to 'latest'.
             latest_path = Path(self.cfg.save_folder) / f"latest{suffix}"
-            latest_path.unlink(missing_ok=True)
-            try:
-                latest_path.symlink_to(checkpoint_dir.name, target_is_directory=True)
-            except FileExistsError:
-                # Same as above, caught when another (file-system) local rank 0 has already made the 'latest' symlink.
-                # This can happen when nodes are saving to a common NFS drive but otherwise have distinct
-                # file-systems.
-                if latest_path.resolve().name != checkpoint_dir.name:
-                    raise
+            # Add a small barrier before creating symlink to reduce race condition
+            # Only needed for sharded checkpoints where multiple fs_local_rank 0 might exist
+            if checkpoint_type == CheckpointType.sharded or checkpoint_type == CheckpointType.sharded_ephemeral:
+                barrier()
+            
+            # Remove old symlink if it exists, with retry to handle race conditions
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    if latest_path.exists() or latest_path.is_symlink():
+                        latest_path.unlink(missing_ok=True)
+                    # Small delay to allow filesystem to sync
+                    if attempt > 0:
+                        time.sleep(0.1 * attempt)
+                    latest_path.symlink_to(checkpoint_dir.name, target_is_directory=True)
+                    break
+                except FileExistsError:
+                    # Check if the symlink already points to the correct checkpoint
+                    if latest_path.exists() or latest_path.is_symlink():
+                        try:
+                            if latest_path.resolve().name == checkpoint_dir.name:
+                                # Symlink already points to the correct checkpoint, which is fine
+                                break
+                        except (OSError, RuntimeError):
+                            # Symlink is broken or cannot be resolved, try again
+                            pass
+                    if attempt == max_retries - 1:
+                        # Last attempt failed, check one more time if it's correct
+                        if latest_path.exists() or latest_path.is_symlink():
+                            try:
+                                if latest_path.resolve().name == checkpoint_dir.name:
+                                    break
+                            except (OSError, RuntimeError):
+                                pass
+                        # If we get here, raise the error
+                        raise
+                    continue
+                except (OSError, RuntimeError) as e:
+                    # Handle other filesystem errors with retry
+                    if attempt == max_retries - 1:
+                        raise
+                    time.sleep(0.1 * attempt)
+                    continue
 
         # Remove old checkpoints.
         # For DDP, checkpoint_type being passed to remove_checkpoint is always `unsharded`.

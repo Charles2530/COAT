@@ -1,4 +1,4 @@
-torchrun --nnodes=4 \
+torchrun --nnodes=1 \
     --nproc-per-node=8 \
     --rdzv_id=5235 \
     --rdzv_backend=c10d \

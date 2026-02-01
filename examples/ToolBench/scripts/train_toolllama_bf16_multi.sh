@@ -5,6 +5,12 @@ torchrun --nnodes=2 \
     --rdzv_endpoint=$MASTER_ADDR:$MASTER_PORT \
     toolbench/train/train.py \
     --model_name_or_path $MODEL_NAME \
+    --use_mxfp4_fake True \
+    --fabit bf16 \
+    --babit bf16 \
+    --backward_quantize True \
+    --minus_exp "None" \
+    --auto_reverse False \
     --data_path MathInstruct/MathInstruct_toolbench_format.json \
     --eval_data_path MathInstruct/MathInstruct_toolbench_format.json \
     --conv_template tool-llama-single-round \

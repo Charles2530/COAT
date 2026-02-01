@@ -161,6 +161,9 @@ def preprocess(
             conv.append_message(role, sentence["value"])
         conversations.append(conv.get_prompt())
 
+
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
     # Tokenize conversations
     input_ids = tokenizer(
         conversations,

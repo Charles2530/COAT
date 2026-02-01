@@ -1,0 +1,27 @@
+{
+  "input_directory": "examples/OLMo/tensors_Olmo1B/700",
+  "data_format": "bf16",
+  "total_files": 17920,
+  "processed_files": 17920,
+  "original_count": 567472553984,
+  "filtered_count": 1332221590,
+  "outlier_percent": 0.23476405698337305,
+  "outlier_threshold": 3.0,
+  "total_elements_after_filtering": 1000000,
+  "value_range": {
+    "min": -2.9850000000000003,
+    "max": 2.985
+  },
+  "statistics": {
+    "mean": 0.0021758399999998843,
+    "std": 0.5634853750722323,
+    "median": 0.014999999999999902
+  },
+  "laplace_fit": {
+    "location_mu": 0.014999999999999902,
+    "scale_b": 0.2868873599999999
+  },
+  "data_format_counts": {
+    "bf16": 17920
+  }
+}

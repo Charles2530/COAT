@@ -168,7 +168,7 @@ def preprocess(
 
 
     if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
+        tokenizer.pad_token_id = 0  # Llama 的 <unk> token id 通常是 0
     # Tokenize conversations
     input_ids = tokenizer(
         conversations,
@@ -189,7 +189,7 @@ def preprocess(
         for i, turn in enumerate(turns):
             if turn == "":
                 continue
-            turn_len = len(tokenizer(turn).input_ids)
+            turn_len = len(tokenizer(turn, add_special_tokens=False).input_ids)
 
             parts = turn.split(sep)
             
@@ -201,7 +201,7 @@ def preprocess(
                 instruction += sep
 
             # "-2" is hardcoded for the LLaMA tokenizer to make the offset correct.
-            instruction_len = len(tokenizer(instruction).input_ids) - 2
+            instruction_len = len(tokenizer(instruction, add_special_tokens=False).input_ids)
 
             # Ignore the user instructions
             target[cur_len : cur_len + instruction_len] = IGNORE_TOKEN_ID

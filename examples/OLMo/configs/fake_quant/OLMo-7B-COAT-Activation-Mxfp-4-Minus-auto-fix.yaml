@@ -1,11 +1,10 @@
-run_name: OLMo-7B-reproduce
+run_name: FakeQuant-Activation-OLMo-7B-MXFP-4-Minus-auto-fix
 seed: 6198
 dry_run: false
 
 wandb:
   name: ${run_name}
   project: CoatOLMo-7B
-  entity: null
 
 model:
   d_model: 4096
@@ -36,6 +35,18 @@ model:
   init_device: meta
   init_fn: mitchell
 
+quantize_model:
+  use_quantize_model: coat_fake
+  backward_quantize: true
+  fabit: mxfp4_e2m1
+  babit: mxfp4_e2m1
+  minus_exp: "auto-fix"
+  weight_memory_efficient: true
+  attn_quantize: false
+  attn_quantize_forward_bit: mxfp4_e2m1
+  attn_quantize_backward_bit: mxfp4_e2m1
+  group_size: 16
+  
 compile: null  # causes instability on AMD GPUs
 
 optimizer:
@@ -61,11 +72,11 @@ tokenizer:
 save_folder: result/checkpoints/${run_name}
 save_overwrite: true
 # Sharded checkpoints (best for restarts)
-save_interval: 100
-save_num_checkpoints_to_keep: 3
+save_interval: 10000
+save_num_checkpoints_to_keep: -1
 # Unsharded checkpoints (for final storage)
-save_interval_unsharded: 10000
-save_num_unsharded_checkpoints_to_keep: -1
+save_interval_unsharded: 100
+save_num_unsharded_checkpoints_to_keep: 3
 
 load_path: ${path.check_exist:result/checkpoints/${run_name}/latest}
 

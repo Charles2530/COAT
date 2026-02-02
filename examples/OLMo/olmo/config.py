@@ -941,6 +941,11 @@ class QuantActivationConfig(BaseConfig):
     The quantization group size of non-linear layers.
     """
 
+    minus_exp: Optional[int|str] = None
+    """
+    Shared exponent offset for MX quantization formats; subtract this from the computed exponent.
+    """
+
     attn_quantize: Optional[bool] = False
     """
     Whether to apply fake quantization to QKV tensors before FlashAttention.

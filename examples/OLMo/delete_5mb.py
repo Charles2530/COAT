@@ -3,7 +3,7 @@ import glob
 from tqdm import tqdm
 
 # --- 配置 ---
-TARGET_DIR = "./tensors_Olmo1B/500"  # 你的 tensor 文件夹路径
+TARGET_DIR = "./newtensors_Olmo1B/500"  # 你的 tensor 文件夹路径
 SIZE_THRESHOLD_MB = 5                 # 阈值：小于 5MB 的文件统统删掉
 # ----------------
 

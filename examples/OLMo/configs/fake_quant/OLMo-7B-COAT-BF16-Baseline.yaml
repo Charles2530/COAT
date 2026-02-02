@@ -1,11 +1,10 @@
-run_name: OLMo-7B-reproduce
+run_name: FakeQuant-Olmo-7B-BF16-Baseline
 seed: 6198
 dry_run: false
 
 wandb:
   name: ${run_name}
   project: CoatOLMo-7B
-  entity: null
 
 model:
   d_model: 4096
@@ -36,6 +35,17 @@ model:
   init_device: meta
   init_fn: mitchell
 
+quantize_model:
+  use_quantize_model: coat_fake
+  backward_quantize: true
+  fabit: bf16
+  babit: bf16
+  weight_memory_efficient: true
+  attn_quantize: true
+  attn_quantize_forward_bit: bf16
+  attn_quantize_backward_bit: bf16
+  group_size: 16
+  
 compile: null  # causes instability on AMD GPUs
 
 optimizer:
@@ -67,7 +77,7 @@ save_num_checkpoints_to_keep: 3
 save_interval_unsharded: 10000
 save_num_unsharded_checkpoints_to_keep: -1
 
-load_path: ${path.check_exist:result/checkpoints/${run_name}/latest}
+load_path: ${path.check_exist:result/Tensor-bf16-olmo7b-checkpoints/${run_name}/latest}
 
 max_duration: 2e12T  # 2T tokens
 global_train_batch_size: 2048

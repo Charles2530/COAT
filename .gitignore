@@ -68,3 +68,4 @@ fake_quant_ops
 examples/ToolBench/datasets/*
 examples/ToolBench/predictions/*
 examples/OLMo/data-indices/
+examples/ToolBench/tool_llama3/

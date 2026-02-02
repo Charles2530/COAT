@@ -55,9 +55,11 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
         self.qargs = qargs
         self.backward_quantize = qargs.backward_quantize
         self.forward_quant_format = qargs.fabit
+        self.minus_exp = getattr(qargs, "minus_exp", None) # 修改了这里，默认None
         self.attn_quantize_format = qargs.attn_quantize_forward_bit
         self.attn_quantize_backward_format = qargs.attn_quantize_backward_bit   
         self.backward_quant_format = qargs.babit
+        log.info(f"[CoatOLMoFake][layer {layer_id}] minus_exp={self.minus_exp}") # print test
     
     def forward(
         self,
@@ -94,7 +96,8 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
             h, 
             forward_format=self.forward_quant_format,
             backward_quantize=self.backward_quantize,
-            backward_format=self.backward_quant_format
+            backward_format=self.backward_quant_format,
+            minus_exp=self.minus_exp,
         )
         h_quant = h_quant.to(torch.bfloat16)
         
@@ -122,7 +125,8 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
                 q, k, v, 
                 forward_format=qkv_forward_format,
                 backward_quantize=use_backward_quant,
-                backward_format=qkv_backward_format
+                backward_format=qkv_backward_format,
+                minus_exp=self.minus_exp,
             )
             # Ensure bfloat16 dtype (quant_dequant_qkv already does this, but keep for consistency with coat_olmo.py)
             q = q.to(torch.bfloat16)
@@ -187,7 +191,8 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
             att,
             forward_format=self.forward_quant_format,
             backward_quantize=self.backward_quantize,
-            backward_format=self.backward_quant_format
+            backward_format=self.backward_quant_format,
+            minus_exp=self.minus_exp,
         )
         att_quant = att_quant.to(torch.bfloat16)
         
@@ -211,7 +216,8 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
             x,
             forward_format=self.forward_quant_format,
             backward_quantize=self.backward_quantize,
-            backward_format=self.backward_quant_format
+            backward_format=self.backward_quant_format,
+            minus_exp=self.minus_exp,
         )
         x_quant = x_quant.to(torch.bfloat16)
         
@@ -229,7 +235,8 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
             x,
             forward_format=self.forward_quant_format,
             backward_quantize=self.backward_quantize,
-            backward_format=self.backward_quant_format
+            backward_format=self.backward_quant_format,
+            minus_exp=self.minus_exp,
         )
         x_quant = x_quant.to(torch.bfloat16)
         

@@ -1,0 +1,320 @@
+diff --git a/.gitignore b/.gitignore
+index ad06d81..815173b 100755
+--- a/.gitignore
++++ b/.gitignore
+@@ -17,8 +17,6 @@ hostfile
+ *_dev.sh
+ *.ipynb
+ 
+-examples/ToolBench/datasets                                                                    │
+-examples/ToolBench/toolllama	
+ 
+ # Python
+ __pycache__
+diff --git a/environment_setup.sh b/environment_setup.sh
+index 8af3da1..39ba1b2 100755
+--- a/environment_setup.sh
++++ b/environment_setup.sh
+@@ -1,5 +1,5 @@
+ #!/usr/bin/env bash
+-# conda activate /mnt/lm_data_afs/wangzining/charles/miniconda3/envs/coat
++
+ CONDA_ENV=${1:-""}
+ if [ -n "$CONDA_ENV" ]; then
+     # This is required to activate conda environment
+diff --git a/examples/OLMo/configs/reproduce/OLMo-1B-reproduce.yaml b/examples/OLMo/configs/reproduce/OLMo-1B-reproduce.yaml
+deleted file mode 100644
+index 85ef3aa..0000000
+--- a/examples/OLMo/configs/reproduce/OLMo-1B-reproduce.yaml
++++ /dev/null
+@@ -1,199 +0,0 @@
+-run_name: OLMo-1B-reproduce
+-seed: 6198
+-dry_run: false
+-
+-wandb:
+-  name: ${run_name}
+-  project: CoatOLMo-1B
+-  entity: null
+-
+-model:
+-  d_model: 2048
+-  n_heads: 16
+-  n_layers: 16
+-  mlp_ratio: 8
+-  weight_tying: true
+-  alibi: false
+-  rope: true
+-  flash_attention: true
+-  attention_dropout: 0.0
+-  attention_layer_norm: false
+-  multi_query_attention: false
+-  include_bias: false
+-  block_type: sequential
+-  layer_norm_type: default
+-  layer_norm_with_affine: false
+-  bias_for_layer_norm: false
+-  attention_layer_norm_with_affine: false
+-  activation_type: swiglu
+-  residual_dropout: 0.0
+-  embedding_dropout: 0.0
+-  max_sequence_length: 2048
+-  vocab_size: 50280
+-  embedding_size: 50304
+-  eos_token_id: 50279
+-  pad_token_id: 1
+-  init_device: meta
+-  init_fn: mitchell
+-
+-compile: null  # causes instability on AMD GPUs
+-
+-optimizer:
+-  name: adamw
+-  learning_rate: 4.0e-4
+-  weight_decay: 0.1
+-  betas:
+-  - 0.9
+-  - 0.95
+-  metrics_log_interval: 10
+-
+-scheduler:
+-  name: cosine_with_warmup
+-  t_warmup: 2000
+-  alpha_f: 0.1
+-
+-tokenizer:
+-  identifier: allenai/eleuther-ai-gpt-neox-20b-pii-special
+-  truncate_direction: right
+-
+-save_folder: result/checkpoints/${run_name}
+-save_overwrite: true
+-# Sharded checkpoints (best for restarts)
+-save_interval: 1000
+-save_num_checkpoints_to_keep: 9
+-# Unsharded checkpoints (for final storage)
+-save_interval_unsharded: 10000
+-save_num_unsharded_checkpoints_to_keep: -1
+-
+-load_path: ${path.check_exist:result/checkpoints/${run_name}/latest}
+-
+-max_duration: 739_328  # 3.1T tokens
+-global_train_batch_size: 2048
+-device_train_microbatch_size: 8
+-
+-precision: amp_bf16
+-
+-fsdp:
+-  wrapping_strategy: null
+-  precision: mixed
+-
+-max_grad_norm: 1.0
+-max_grad_norm_ratio: null
+-
+-speed_monitor:
+-  window_size: 20
+-
+-eval_interval: ${save_interval}
+-eval_subset_num_batches: -1
+-device_eval_batch_size: ${device_train_microbatch_size}
+-evaluators:
+-  # lump all the small datasets together (we still get separate metrics).
+-  - label: v3-small-ppl-validation
+-    data:
+-      num_workers: 0
+-      drop_last: true
+-      datasets:
+-        v3-small-c4_en-validation:
+-          - datasets/eval-data/perplexity/v3_small_gptneox20b/c4_en/val/part-0-00000.npy
+-        v3-small-dolma_books-validation:
+-          - datasets/eval-data/perplexity/v3_small_gptneox20b/dolma_books/val/part-0-00000.npy
+-        v3-small-dolma_common-crawl-validation:
+-          - datasets/eval-data/perplexity/v3_small_gptneox20b/dolma_common-crawl/val/part-0-00000.npy
+-        v3-small-dolma_pes2o-validation:
+-          - datasets/eval-data/perplexity/v3_small_gptneox20b/dolma_pes2o/val/part-0-00000.npy
+-        v3-small-dolma_reddit-validation:
+-          - datasets/eval-data/perplexity/v3_small_gptneox20b/dolma_reddit/val/part-0-00000.npy
+-        v3-small-dolma_stack-validation:
+-          - datasets/eval-data/perplexity/v3_small_gptneox20b/dolma_stack/val/part-0-00000.npy
+-        v3-small-dolma_wiki-validation:
+-          - datasets/eval-data/perplexity/v3_small_gptneox20b/dolma_wiki/val/part-0-00000.npy
+-        v3-small-ice-validation:
+-          - datasets/eval-data/perplexity/v3_small_gptneox20b/ice/val/part-0-00000.npy
+-        v3-small-m2d2_s2orc-validation:
+-          - datasets/eval-data/perplexity/v3_small_gptneox20b/m2d2_s2orc/val/part-0-00000.npy
+-        v3-small-pile-validation:
+-          - datasets/eval-data/perplexity/v3_small_gptneox20b/pile/val/part-0-00000.npy
+-        v3-small-wikitext_103-validation:
+-          - datasets/eval-data/perplexity/v3_small_gptneox20b/wikitext_103/val/part-0-00000.npy
+-
+-  - label: v2-small-ppl-validation
+-    data:
+-      num_workers: 0
+-      drop_last: true
+-      datasets:
+-        v2-small-4chan-validation:
+-        - datasets/eval-data/perplexity/v2_small_gptneox20b/4chan/val.npy
+-        v2-small-c4_100_domains-validation:
+-        - datasets/eval-data/perplexity/v2_small_gptneox20b/c4_100_domains/val.npy
+-        v2-small-c4_en-validation:
+-        - datasets/eval-data/perplexity/v2_small_gptneox20b/c4_en/val.npy
+-        v2-small-gab-validation:
+-        - datasets/eval-data/perplexity/v2_small_gptneox20b/gab/val.npy
+-        v2-small-ice-validation:
+-        - datasets/eval-data/perplexity/v2_small_gptneox20b/ice/val.npy
+-        v2-small-m2d2_s2orc-validation:
+-        - datasets/eval-data/perplexity/v2_small_gptneox20b/m2d2_s2orc/val.npy
+-        v2-small-m2d2_wiki-validation:
+-        - datasets/eval-data/perplexity/v2_small_gptneox20b/m2d2_wiki/val.npy
+-        v2-small-manosphere-validation:
+-        - datasets/eval-data/perplexity/v2_small_gptneox20b/manosphere/val.npy
+-        v2-small-mc4_en-validation:
+-        - datasets/eval-data/perplexity/v2_small_gptneox20b/mc4_en/val.npy
+-        v2-small-pile-validation:
+-        - datasets/eval-data/perplexity/v2_small_gptneox20b/pile/val.npy
+-        v2-small-ptb-validation:
+-        - datasets/eval-data/perplexity/v2_small_gptneox20b/ptb/val.npy
+-        v2-small-twitterAEE-validation:
+-        - datasets/eval-data/perplexity/v2_small_gptneox20b/twitterAEE/val.npy
+-        v2-small-wikitext_103-validation:
+-        - datasets/eval-data/perplexity/v2_small_gptneox20b/wikitext_103/val.npy
+-
+-  # - label: piqa
+-  #   type: downstream
+-
+-  # - label: hellaswag
+-  #   type: downstream
+-
+-  # - label: winogrande
+-  #   type: downstream
+-
+-  # - label: openbook_qa
+-  #   type: downstream
+-
+-  # # - label: boolq  # requires implemention of the pmi_dc matrix
+-  #   # type: downstream
+-
+-  # - label: sciq
+-  #   type: downstream
+-
+-  # - label: arc_easy
+-  #   type: downstream
+-
+-  # # - label: arc_challenge  # requires implemention of the pmi_dc matrix
+-  # #   type: downstream
+-
+-  # - label: copa
+-  #   type: downstream
+-
+-  # - label: rte
+-  #   type: downstream
+-
+-  # - label: commitment_bank
+-  #   type: downstream
+-
+-  # - label: mrpc
+-  #   type: downstream
+-
+-  # - label: sst2
+-  #   type: downstream
+-
+-data:
+-  pad_direction: right
+-  num_workers: 0
+-  drop_last: true
+-  pin_memory: true
+-  prefetch_factor: 16
+-  persistent_workers: true
+-  timeout: 0
+-  paths:
+-    - datasets/dolma/v1_5/part-000-00000.npy
+diff --git a/examples/OLMo/olmo/train.py b/examples/OLMo/olmo/train.py
+index a4ef895..84403b1 100644
+--- a/examples/OLMo/olmo/train.py
++++ b/examples/OLMo/olmo/train.py
+@@ -781,7 +781,7 @@ class Trainer:
+ 
+         for micro_batch_idx, micro_batch in enumerate(micro_batches):
+             if self.cfg.quantize_model.use_quantize_model == "coat_real":
+-                from coat.utils._fp8manager import FP8Manager
++                from coat.activation.models._fp8manager import FP8Manager
+                 if micro_batch_idx == 0:
+                     FP8Manager.is_first_microbatch = True
+                 else:
+@@ -791,7 +791,8 @@ class Trainer:
+                 if get_global_rank() == 0:
+                     from coat.activation.utils import record_memory_allocated
+                     memory_usage = torch.cuda.memory_allocated() / 1024 ** 2
+-                    record_memory_allocated["Before OLMo Step Forward"].append(memory_usage)  
++                    record_memory_allocated["Before OLMo Step Forward"].append(memory_usage)
++                    
+             # setup sync context for DDP for all micro-batches except the last
+             grad_sync_context = nullcontext
+             if (
+diff --git a/examples/OLMo/run_both.sh b/examples/OLMo/run_both.sh
+deleted file mode 100644
+index a4b5f95..0000000
+--- a/examples/OLMo/run_both.sh
++++ /dev/null
+@@ -1 +0,0 @@
+-torchrun --nproc_per_node=8 scripts/train.py configs/coat/OLMo-1B-COAT-Both.yaml
+diff --git a/examples/OLMo/scripts/train.py b/examples/OLMo/scripts/train.py
+index ad2ab8c..8b793aa 100644
+--- a/examples/OLMo/scripts/train.py
++++ b/examples/OLMo/scripts/train.py
+@@ -109,6 +109,7 @@ def main(cfg: TrainConfig) -> None:
+         wandb.init(
+             dir=wandb_dir,
+             project=cfg.wandb.project,
++            entity=cfg.wandb.entity,
+             group=cfg.wandb.group,
+             name=cfg.wandb.name,
+             tags=cfg.wandb.tags,
+diff --git a/examples/ToolBench/scripts/llama_convert_from_hf.sh b/examples/ToolBench/scripts/llama_convert_from_hf.sh
+index 929b7f5..c8bb2a0 100644
+--- a/examples/ToolBench/scripts/llama_convert_from_hf.sh
++++ b/examples/ToolBench/scripts/llama_convert_from_hf.sh
+@@ -1,5 +1,5 @@
+-export MODEL_NAME="/mnt/lm_data_afs/wangzining/charles/models/llama3-8b"
+-export CONVERTED_MODEL_PATH="converted_models/llama3-8b"
++export MODEL_NAME="meta-llama/Llama-2-7b-hf"
++export CONVERTED_MODEL_PATH="converted_models/llama-2-7b"
+ export CURRENT_DIR=$(pwd)
+ export FULL_CONVERTED_MODEL_PATH="${CURRENT_DIR}/${CONVERTED_MODEL_PATH}"
+ 
+@@ -22,4 +22,4 @@ python -m coat.models.coat_llama_convert_from_hf \
+     --bwbit E5M2 \
+     --babit E5M2 \
+     --bobit E5M2 \
+-    --group_size 16
++    --group_size 16
+\ No newline at end of file
+diff --git a/examples/ToolBench/scripts/train_toolllama_fp8.sh b/examples/ToolBench/scripts/train_toolllama_fp8.sh
+index da46819..1090878 100644
+--- a/examples/ToolBench/scripts/train_toolllama_fp8.sh
++++ b/examples/ToolBench/scripts/train_toolllama_fp8.sh
+@@ -1,7 +1,7 @@
+ export PYTHONPATH=./
+ export CUDA_VISIBLE_DEVICES=4,5,6,7
+-export MODEL_NAME="/mnt/lm_data_afs/wangzining/charles/models/llama3-8b"
+-export CONVERTED_MODEL_PATH="converted_models/llama3-8b"
++export MODEL_NAME="meta-llama/Llama-2-7b-hf"
++export CONVERTED_MODEL_PATH="converted_models/llama-2-7b"
+ 
+ # We double the batch size here
+ torchrun --nproc_per_node=4 --master_port=20001 toolbench/train/train_fp8.py \
+diff --git a/examples/ToolBench/toolbench/train/train_fp8.py b/examples/ToolBench/toolbench/train/train_fp8.py
+index 37a742f..779fa58 100644
+--- a/examples/ToolBench/toolbench/train/train_fp8.py
++++ b/examples/ToolBench/toolbench/train/train_fp8.py
+@@ -272,10 +272,8 @@ def train():
+         padding_side="right",
+         use_fast=False,
+     )
++    tokenizer.pad_token = tokenizer.unk_token
+ 
+-    # tokenizer.pad_token = tokenizer.unk_token
+-    tokenizer.pad_token = tokenizer.eos_token
+-    # tokenizer.pad_token="<|reserved_special_token_9|>; tokenizer.padding_side="left""
+     data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
+     world_size = int(os.environ.get("WORLD_SIZE", 1))
+     ddp = world_size != 1

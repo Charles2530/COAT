@@ -54,7 +54,6 @@ torch.set_printoptions(profile="full")
 @dataclass
 class ModelArguments:
     model_name_or_path: Optional[str] = field(default="facebook/opt-125m")
-<<<<<<< HEAD
     use_mxfp4_fake: bool = field(
         default=False,
         metadata={"help": "Use MXFP4 fake-quantized Llama model from coat."},
@@ -90,19 +89,6 @@ class ModelArguments:
     attn_quantize_backward_bit: Optional[str] = field(
         default=None,
         metadata={"help": "Backward format for attention QKV fake quantization (defaults to babit)."},
-=======
-    fabit: Optional[str] = field(
-        default=None, metadata={"help": "Fake-quant forward bit type (e.g., MXFP4)."}
-    )
-    babit: Optional[str] = field(
-        default=None, metadata={"help": "Fake-quant backward bit type (e.g., E5M2)."}
-    )
-    attn_quantize: Optional[bool] = field(
-        default=None, metadata={"help": "Enable attention quantization when using fake quant."}
-    )
-    minus_exp: Optional[int] = field(
-        default=None, metadata={"help": "Minus exponent offset for fake quantization."}
->>>>>>> main
     )
 
 

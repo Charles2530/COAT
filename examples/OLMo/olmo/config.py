@@ -944,6 +944,22 @@ class QuantActivationConfig(BaseConfig):
     minus_exp: Optional[int|str] = None
     """
     Shared exponent offset for MX quantization formats; subtract this from the computed exponent.
+    Used as default for both forward and backward when forward_minus_exp/backward_minus_exp are not set.
+    """
+
+    forward_minus_exp: Optional[int|str] = None
+    """
+    Exponent offset for forward pass only. If None, minus_exp is used.
+    """
+
+    backward_minus_exp: Optional[int|str] = None
+    """
+    Exponent offset for backward (gradient) pass only. If None, minus_exp is used.
+    """
+
+    debug_save_tensors: Optional[bool] = False
+    """
+    When True, enable saving intermediate tensors at TARGET_ITERS for debugging (see fake_quant_ops.quant.operators.DebugSaverConfig).
     """
 
     attn_quantize: Optional[bool] = False

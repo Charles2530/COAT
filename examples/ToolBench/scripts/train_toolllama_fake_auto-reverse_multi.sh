@@ -1,5 +1,5 @@
-torchrun --nnodes=4 \
-    --nproc-per-node=8 \
+torchrun --nnodes=8 \
+    --nproc-per-node=4 \
     --rdzv_id=5235 \
     --rdzv_backend=c10d \
     --rdzv_endpoint=$MASTER_ADDR:$MASTER_PORT \

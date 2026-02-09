@@ -253,6 +253,10 @@ class Trainer:
                 self.loss_fn = fused_loss_fn
             else:
                 raise NameError("`fused_loss_fn` is not defined. Please ensure that `flash_attn` is installed.")
+        if DebugSaverConfig is not None:
+            DebugSaverConfig.ENABLE = getattr(
+                self.cfg.quantize_model, "debug_save_tensors", False
+            )
         self._sync_debug_saver_iter()
 
     def _sync_debug_saver_iter(self) -> None:

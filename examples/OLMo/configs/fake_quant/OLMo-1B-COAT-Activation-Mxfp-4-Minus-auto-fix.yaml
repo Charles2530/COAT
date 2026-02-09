@@ -41,7 +41,9 @@ quantize_model:
   backward_quantize: true
   fabit: mxfp4_e2m1
   babit: mxfp4_e2m1
-  minus_exp: "auto-fix"
+  # minus_exp: None
+  # forward_minus_exp: None
+  backward_minus_exp: "auto-fix"
   weight_memory_efficient: true
   attn_quantize: false
   attn_quantize_forward_bit: mxfp4_e2m1

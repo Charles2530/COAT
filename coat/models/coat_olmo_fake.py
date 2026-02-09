@@ -55,11 +55,16 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
         self.qargs = qargs
         self.backward_quantize = qargs.backward_quantize
         self.forward_quant_format = qargs.fabit
-        self.minus_exp = getattr(qargs, "minus_exp", None) # 修改了这里，默认None
+        self.minus_exp = getattr(qargs, "minus_exp", None)
+        self.forward_minus_exp = getattr(qargs, "forward_minus_exp", None)
+        self.backward_minus_exp = getattr(qargs, "backward_minus_exp", None)
         self.attn_quantize_format = qargs.attn_quantize_forward_bit
-        self.attn_quantize_backward_format = qargs.attn_quantize_backward_bit   
+        self.attn_quantize_backward_format = qargs.attn_quantize_backward_bit
         self.backward_quant_format = qargs.babit
-        log.info(f"[CoatOLMoFake][layer {layer_id}] minus_exp={self.minus_exp}") # print test
+        log.info(
+            f"[CoatOLMoFake][layer {layer_id}] minus_exp={self.minus_exp} "
+            f"forward_minus_exp={self.forward_minus_exp} backward_minus_exp={self.backward_minus_exp}"
+        )
     
     def forward(
         self,
@@ -93,11 +98,13 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
         
         # Quantize input to att_proj and convert back to bfloat16
         h_quant = quant_dequant_tensor_with_backward(
-            h, 
+            h,
             forward_format=self.forward_quant_format,
+            minus_exp=self.minus_exp,
+            forward_minus_exp=self.forward_minus_exp,
+            backward_minus_exp=self.backward_minus_exp,
             backward_quantize=self.backward_quantize,
             backward_format=self.backward_quant_format,
-            minus_exp=self.minus_exp,
         )
         h_quant = h_quant.to(torch.bfloat16)
         
@@ -122,11 +129,13 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
             # Directly read backward_quantize from config
             use_backward_quant = getattr(self.qargs, 'backward_quantize', False)
             q, k, v = quant_dequant_qkv(
-                q, k, v, 
+                q, k, v,
+                minus_exp=self.minus_exp,
+                forward_minus_exp=self.forward_minus_exp,
+                backward_minus_exp=self.backward_minus_exp,
                 forward_format=qkv_forward_format,
                 backward_quantize=use_backward_quant,
                 backward_format=qkv_backward_format,
-                minus_exp=self.minus_exp,
             )
             # Ensure bfloat16 dtype (quant_dequant_qkv already does this, but keep for consistency with coat_olmo.py)
             q = q.to(torch.bfloat16)
@@ -215,9 +224,11 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
         x_quant = quant_dequant_tensor_with_backward(
             x,
             forward_format=self.forward_quant_format,
+            minus_exp=self.minus_exp,
+            forward_minus_exp=self.forward_minus_exp,
+            backward_minus_exp=self.backward_minus_exp,
             backward_quantize=self.backward_quantize,
             backward_format=self.backward_quant_format,
-            minus_exp=self.minus_exp,
         )
         x_quant = x_quant.to(torch.bfloat16)
         
@@ -234,9 +245,11 @@ class CoatOLMoFakeSequentialBlock(OLMoSequentialBlock):
         x_quant = quant_dequant_tensor_with_backward(
             x,
             forward_format=self.forward_quant_format,
+            minus_exp=self.minus_exp,
+            forward_minus_exp=self.forward_minus_exp,
+            backward_minus_exp=self.backward_minus_exp,
             backward_quantize=self.backward_quantize,
             backward_format=self.backward_quant_format,
-            minus_exp=self.minus_exp,
         )
         x_quant = x_quant.to(torch.bfloat16)
         

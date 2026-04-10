@@ -1,16 +1,16 @@
-run_name: FakeQuant-Activation-OLMo-30B-MXFP-4-Minus-auto-fix
+run_name: FakeQuant-Olmo-7B-NVFP4-Baseline-fix
 seed: 6198
 dry_run: false
 
 wandb:
   name: ${run_name}
-  project: CoatOLMo-30B
+  project: CoatOLMo-7B
 
 model:
-  d_model: 5120
-  n_heads: 40
-  n_layers: 64
-  mlp_hidden_size: 27520
+  d_model: 4096
+  n_heads: 32
+  n_layers: 32
+  mlp_hidden_size: 22016
   weight_tying: false
   alibi: false
   rope: true
@@ -38,16 +38,14 @@ model:
 quantize_model:
   use_quantize_model: coat_fake
   backward_quantize: true
-  fabit: mxfp4_e2m1
-  babit: mxfp4_e2m1
-  forward_minus_exp: null
-  backward_minus_exp: "auto-fix"
+  fabit: nvfp4_e2m1
+  babit: nvfp4_e2m1
   weight_memory_efficient: true
   attn_quantize: false
-  attn_quantize_forward_bit: mxfp4_e2m1
-  attn_quantize_backward_bit: mxfp4_e2m1
+  attn_quantize_forward_bit: nvfp4_e2m1
+  attn_quantize_backward_bit: nvfp4_e2m1
   group_size: 16
-
+  
 compile: null  # causes instability on AMD GPUs
 
 optimizer:
@@ -72,16 +70,18 @@ tokenizer:
 
 save_folder: result/checkpoints/${run_name}
 save_overwrite: true
-save_interval: 10000
-save_num_checkpoints_to_keep: 1
-save_interval_unsharded: 1
-save_num_unsharded_checkpoints_to_keep: 2
+# Sharded checkpoints (best for restarts)
+save_interval: 100
+save_num_checkpoints_to_keep: 3
+# Unsharded checkpoints (for final storage)
+save_interval_unsharded: 10000
+save_num_unsharded_checkpoints_to_keep: -1
 
 load_path: ${path.check_exist:result/checkpoints/${run_name}/latest}
 
-max_duration: 2e12T
+max_duration: 2e12T  # 2T tokens
 global_train_batch_size: 2048
-device_train_microbatch_size: 1
+device_train_microbatch_size: 2
 time_limit: null
 
 precision: amp_bf16
@@ -100,6 +100,7 @@ eval_interval: 500
 eval_subset_num_batches: -1
 device_eval_batch_size: ${device_train_microbatch_size}
 evaluators:
+  # lump all the small datasets together (we still get separate metrics).
   - label: v3-small-ppl-validation
     data:
       num_workers: 0
@@ -127,6 +128,7 @@ evaluators:
           - datasets/eval-data/perplexity/v3_small_gptneox20b/pile/val/part-0-00000.npy
         v3-small-wikitext_103-validation:
           - datasets/eval-data/perplexity/v3_small_gptneox20b/wikitext_103/val/part-0-00000.npy
+
   - label: v2-small-ppl-validation
     data:
       num_workers: 0
@@ -158,14 +160,45 @@ evaluators:
         - datasets/eval-data/perplexity/v2_small_gptneox20b/twitterAEE/val.npy
         v2-small-wikitext_103-validation:
         - datasets/eval-data/perplexity/v2_small_gptneox20b/wikitext_103/val.npy
+
+  # - label: piqa
+  #   type: downstream
+
   - label: hellaswag
     type: downstream
+
+  # - label: winogrande
+  #   type: downstream
+
+  # - label: openbook_qa
+  #   type: downstream
+
+  # # - label: boolq  # requires implemention of the pmi_dc matrix
+  #   # type: downstream
+
   - label: sciq
     type: downstream
+
   - label: arc_easy
     type: downstream
+
+  # # - label: arc_challenge  # requires implemention of the pmi_dc matrix
+  # #   type: downstream
+
   - label: copa
     type: downstream
+
+  # - label: rte
+  #   type: downstream
+
+  # - label: commitment_bank
+  #   type: downstream
+
+  # - label: mrpc
+  #   type: downstream
+
+  # - label: sst2
+  #   type: downstream
 
 data:
   pad_direction: right

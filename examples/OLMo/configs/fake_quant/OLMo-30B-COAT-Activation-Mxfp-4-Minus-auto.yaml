@@ -71,10 +71,10 @@ tokenizer:
 
 save_folder: result/checkpoints/${run_name}
 save_overwrite: true
-save_interval: 100
-save_num_checkpoints_to_keep: 3
-save_interval_unsharded: 10000
-save_num_unsharded_checkpoints_to_keep: -1
+save_interval: 10000
+save_num_checkpoints_to_keep: 1
+save_interval_unsharded: 100
+save_num_unsharded_checkpoints_to_keep: 2
 
 load_path: ${path.check_exist:result/checkpoints/${run_name}/latest}
 
